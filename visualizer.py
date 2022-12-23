@@ -1,27 +1,25 @@
 from PIL import Image, ImageDraw
 
-from util import load_map
+from util import load_map, info_about_map
 
 IMAGE_SIZE = 10000, 10000
-HOUSE_SIZE = 5
+HOUSE_SIZE = 15
 
 BACKGROUND_COLOR = (0, 0, 0)
 SNOW_AREA_COLOR = (0, 0, 255)
 HOUSE_COLOR = (0, 255, 0)
+START_COLOR = (255, 255, 255)
 
 with open("data/map.json") as f:
     m = load_map()
+    info_about_map(m)
 
-    min_x, min_y, max_x, max_y = 1e10, 1e10, 0, 0
-    for child in m.children:
-        min_x = min(min_x, child.x)
-        min_y = min(min_y, child.y)
-        max_x = max(max_x, child.x)
-        max_y = max(max_y, child.y)
-    print(f"{min_x=}, {min_y=}, {max_x=}, {max_y=}")
+    print(" === DRAWING === ")
 
     image = Image.new("RGB", IMAGE_SIZE, BACKGROUND_COLOR)
     draw = ImageDraw.Draw(image)
+
+    draw.rectangle(((0, 0), (10, 10)), START_COLOR)
 
     for area in m.snowAreas:
         draw.ellipse(
