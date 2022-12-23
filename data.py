@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from dataclass_wizard import JSONWizard
+from dataclass_wizard import JSONWizard, json_field
 
 Bag = list[int]
 
@@ -12,7 +12,7 @@ class Coordinates(JSONWizard):
 
 @dataclass
 class Route(JSONWizard):
-    map_id: str
+    map_id: str = json_field('mapID', all=True)
     moves: list[Coordinates]
     stack_of_bags: list[Bag]
 

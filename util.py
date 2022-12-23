@@ -1,10 +1,12 @@
 from constants import SUBMISSION_URL, AUTH_HEADER, MAP_URL, INFO_URL_TEMPLATE, MAP_FILE_PATH
 from data import Route, RouteResponse, RoundInfo, Map
 from requests import post, get
+import json
 
 
 def send_solution(solution: Route) -> RouteResponse:
-    response = post(SUBMISSION_URL, json=solution.to_json(), headers=AUTH_HEADER)
+    data = solution.to_dict()
+    response = post(SUBMISSION_URL, json=data, headers=AUTH_HEADER)
     return RouteResponse.from_json(response.text)
 
 
