@@ -25,3 +25,13 @@ if __name__ == '__main__':
     print('=== SOLUTION ===')
     print(sus_solution)
     print(emulate(sus_solution, sus_map))
+    # sus_response = send_solution(sus_solution)
+    # print('=== RESPONSE ===')
+    # print(sus_response)
+    # print('=== INFO ===')
+    # if sus_response.success:
+    #     print(get_solution_info(sus_response.round_id))
+    #     with open('.round_ids.txt', 'a+') as solution_file:
+    #         solution_file.write(sus_response.round_id + "\n")
+    # else:
+    #     print('Unsuccessful')
