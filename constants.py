@@ -13,3 +13,9 @@ MAP_URL = BASE_URL + f'/json/map/{MAP_ID}.json'
 AUTH_HEADER = {'X-API-Key': API_KEY}
 
 MAP_FILE_PATH = './data/map.json'
+
+# Game constants
+BAG_MAX_WEIGHT = 200
+BAG_MAX_VOLUME = 100
+BASE_SPEED = 70
+SNOW_SPEED = 10

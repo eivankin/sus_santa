@@ -21,7 +21,7 @@ with open("data/map.json") as f:
 
     draw.rectangle(((0, 0), (10, 10)), START_COLOR)
 
-    for area in m.snowAreas:
+    for area in m.snow_areas:
         draw.ellipse(
             (
                 area.x - area.r,

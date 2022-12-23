@@ -1,7 +1,6 @@
 from constants import SUBMISSION_URL, AUTH_HEADER, MAP_URL, INFO_URL_TEMPLATE, MAP_FILE_PATH
 from data import Route, RouteResponse, RoundInfo, Map
 from requests import post, get
-import json
 
 
 def send_solution(solution: Route) -> RouteResponse:
@@ -41,4 +40,4 @@ def info_about_map(m: Map) -> None:
     print(f"{min_x=}, {min_y=}, {max_x=}, {max_y=}")
     print(f"Number of children: {len(m.children)}")
     print(f"Number of gifts: {len(m.gifts)}")
-    print(f"Number of snow areas: {len(m.snowAreas)}")
+    print(f"Number of snow areas: {len(m.snow_areas)}")

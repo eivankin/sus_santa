@@ -2,6 +2,7 @@ from util import get_map, send_solution, get_solution_info, save_map, load_map
 from data import Route, Coordinates
 from constants import MAP_ID, MAP_FILE_PATH
 import os
+from checker import emulate
 
 if __name__ == '__main__':
     if not os.path.exists(MAP_FILE_PATH):
@@ -23,11 +24,4 @@ if __name__ == '__main__':
                          stack_of_bags=stack_of_bags)
     print('=== SOLUTION ===')
     print(sus_solution)
-    sus_response = send_solution(sus_solution)
-    print('=== RESPONSE ===')
-    print(sus_response)
-    print('=== INFO ===')
-    if sus_response.success:
-        print(get_solution_info(sus_response.round_id))
-    else:
-        print('Unsuccessful')
+    print(emulate(sus_solution, sus_map))
