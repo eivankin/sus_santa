@@ -22,7 +22,7 @@ if __name__ == "__main__":
     moves = []
     curr_pos = Coordinates(0, 0)
     unvisited = set(child_pos for child_pos in sus_map.children)
-    for bag in stack_of_bags:
+    for bag in reversed(stack_of_bags):
         for _ in bag:
             nearest_child_pos = None
             metric = 10**100
