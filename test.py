@@ -1,11 +1,12 @@
-from copy import deepcopy
 import os
 from random import gauss, uniform
 from annealer import simulated_annealing
 from constants import MAP_FILE_PATH
 from data import Circle, Coordinates, Line, Route
 from util import get_map, load_map, save_map
-from visualizer import visualize_map, visualize_route
+from visualizer import visualize_route
+from simanneal import Annealer
+
 
 if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
@@ -20,9 +21,9 @@ if __name__ == "__main__":
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
-    def optimal_path_from_base_to(
-        f: Coordinates, segmentation: int = 10
-    ) -> list[Coordinates]:
+    def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
+        segmentation = 5
+
         l = f.dist(base)
         cos_a = f.x / l
         sin_a = f.y / l
@@ -44,23 +45,21 @@ if __name__ == "__main__":
             res = 0
             prev = f
             for pos in path:
-                res += prev.dist(pos)  # + 6 * penalty(pos, prev)
+                res += prev.dist(pos) + 6 * penalty(pos, prev)
                 prev = pos
-            res += prev.dist(base)
+            res += prev.dist(base) + 6 * penalty(base, prev)
             return res * 0.001
 
         def mutate(path):
             nonlocal f
             mutant = [0] * len(path)
             for i, pos in enumerate(path):
-                # p = retranslate(pos)
-                # y_max = p.x * sin_a / cos_a
-                # y_min = -p.x * cos_a / sin_a
-                # p.y = gauss(p.y, 300)
-                # p.y = max(y_min, min(y_max, p.y))
-                # assert abs(translate(Coordinates(p.x, y_min)).y) <= 0.01
-                # assert abs(translate(Coordinates(p.x, y_max)).x) <= 0.01
-                mutant[i] = pos  # translate(p)
+                p = retranslate(pos)
+                y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
+                y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
+                p.y = gauss(p.y, 300)
+                p.y = max(y_min, min(y_max, p.y))
+                mutant[i] = translate(p)
             return mutant
 
         def rand_path():
@@ -68,18 +67,24 @@ if __name__ == "__main__":
             res = [None] * segmentation
             for i in range(segmentation):
                 x = l * (i + 1) / (segmentation + 1)
-                y_max = x * cos_a / sin_a
-                y_min = -x * sin_a / cos_a
+                y_max = min(x * cos_a / sin_a, (10000 - x * sin_a) / cos_a)
+                y_min = max(-x * sin_a / cos_a, (-10000 + x * cos_a) / sin_a)
                 y = uniform(y_min, y_max)
                 res[i] = translate(Coordinates(x, y))
             return res
 
-        return [
-            Coordinates(int(c.x), int(c.y))
-            for c in simulated_annealing(rand_path(), objective, mutate)
-        ]
+        class PathAnnealer(Annealer):
+            def move(self):
+                self.state = mutate(self.state)
 
-    end = Coordinates(5000, 8000)
+            def energy(self):
+                return objective(self.state)
+
+        annealer = PathAnnealer(rand_path())
+        annealer.set_schedule(annealer.auto(minutes=0.1))
+        return [Coordinates(int(c.x), int(c.y)) for c in annealer.anneal()[0]]
+
+    end = Coordinates(3000, 9000)
     base = Coordinates(0, 0)
     path = [base]
     path.extend(optimal_path_from_base_to(end))
