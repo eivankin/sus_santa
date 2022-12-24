@@ -56,12 +56,15 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
     total_time = 0
     segments: list[EmulatorReportSegment] = []
     tot_snow = 0
-    for next_pos in solution.moves:
+    for next_pos in solution.moves + [None]:
         if curr_bag and curr_pos in children:
             curr_bag.pop()
 
         if not curr_bag and curr_pos == start:
             curr_bag = bags.pop().copy()
+
+        if next_pos is None:
+            break
 
         dist, snow_dist, distances_in_snow = segment_dist(curr_pos, next_pos, map_data.snow_areas)
         assert dist > 0
@@ -102,16 +105,24 @@ if __name__ == "__main__":
         if c != moves[-1]:
             moves.append(c)
 
-    sol.moves = moves[1:]
+    moves.pop(0)
+
+    if moves[-1] == Coordinates(0, 0):
+        moves.pop()
+    if moves[0] == Coordinates(0, 0):
+        moves.pop(0)
+
+    sol.moves = moves
     mp = load_map()
     print(emulate(sol, mp))
-    sus_response = send_solution(sol)
-    print("=== RESPONSE ===")
-    print(sus_response)
-    print("=== INFO ===")
-    if sus_response.success:
-        print(get_solution_info(sus_response.round_id))
-        with edit_json_file(IDS_FILE) as solution:
-            solution[sus_response.round_id] = input("label: ")
-    else:
-        print("Unsuccessful")
+    if input("Send solution? y/n: ").lower() in ("y", "yes"):
+        sus_response = send_solution(sol)
+        print("=== RESPONSE ===")
+        print(sus_response)
+        print("=== INFO ===")
+        if sus_response.success:
+            print(get_solution_info(sus_response.round_id))
+            with edit_json_file(IDS_FILE) as solution:
+                solution[sus_response.round_id] = input("label: ")
+        else:
+            print("Unsuccessful")
