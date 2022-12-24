@@ -8,6 +8,7 @@ from data import (
     Circle,
     EmulatorReport,
     EmulatorReportSegment,
+    SnowArea
 )
 from constants import BAG_MAX_WEIGHT, BAG_MAX_VOLUME, BASE_SPEED, SNOW_SPEED
 from util import save, load, load_map
@@ -15,6 +16,23 @@ from util import save, load, load_map
 
 def is_bag_valid(bag: BagDescription) -> bool:
     return bag.weight <= BAG_MAX_WEIGHT and bag.volume <= BAG_MAX_VOLUME
+
+
+def segment_dist(from_pos: Coordinates, to_pos: Coordinates,
+                 snow_areas: list[SnowArea]) -> tuple[float, float, list[float]]:
+    dist = from_pos.dist(to_pos)
+    line = Line.from_two_points(from_pos, to_pos)
+    distances_in_snow = [
+        line.distance_in_circle(Circle.from_snow(snow))
+        for snow in snow_areas
+    ]
+    snow_dist = sum(distances_in_snow)
+    assert snow_dist <= dist
+    return dist, snow_dist, distances_in_snow
+
+
+def segment_time(dist: float, snow_dist: float) -> float:
+    return snow_dist / SNOW_SPEED + (dist - snow_dist) / BASE_SPEED
 
 
 def emulate(solution: Route, map_data: Map) -> RouteData:
@@ -45,17 +63,10 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
         if not curr_bag and curr_pos == start:
             curr_bag = bags.pop().copy()
 
-        dist = curr_pos.dist(next_pos)
+        dist, snow_dist, distances_in_snow = segment_dist(curr_pos, next_pos, map_data.snow_areas)
         total_dist += dist
-        line = Line.from_two_points(curr_pos, next_pos)
-        distances_in_snow = [
-            line.distance_in_circle(Circle.from_snow(snow))
-            for snow in map_data.snow_areas
-        ]
-        snow_dist = sum(distances_in_snow)
         tot_snow += snow_dist
-        assert snow_dist <= dist
-        total_time += snow_dist / SNOW_SPEED + (dist - snow_dist) / BASE_SPEED
+        total_time += segment_time(dist, snow_dist)
         segments.append(
             EmulatorReportSegment(
                 distances_in_snow=distances_in_snow,
