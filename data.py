@@ -156,3 +156,8 @@ class EmulatorReport(JSONWizard):
     total_distance: float
     distance_in_snow: float
     segments: list[EmulatorReportSegment]
+
+
+if __name__ == "__main__":
+    line = Line.from_two_points(Coordinates(617, 568), Coordinates(539, 715))
+    print(line.distance_in_circle(Circle(Coordinates(432, 939), 303)))

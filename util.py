@@ -6,7 +6,7 @@ from constants import (
     INFO_URL_TEMPLATE,
     MAP_FILE_PATH,
 )
-from data import Route, RouteResponse, RoundInfo, Map, Bag
+from data import Route, RouteResponse, RoundInfo, Map, Bag, Coordinates
 from requests import post, get
 
 
@@ -84,3 +84,18 @@ def load_bags() -> list[Bag]:
         for bag in json.load(f):
             stack_of_bags.append(bag["gift_ids"])
     return stack_of_bags
+
+
+def cleanup_jumps_to_start(old_moves: list[Coordinates]):
+    moves = [Coordinates(0, 0)]
+    for c in old_moves:
+        if c != moves[-1]:
+            moves.append(c)
+
+    moves.pop(0)
+
+    if moves[-1] == Coordinates(0, 0):
+        moves.pop()
+    if moves[0] == Coordinates(0, 0):
+        moves.pop(0)
+    return moves

@@ -6,17 +6,19 @@ from tqdm import tqdm
 
 import json
 import os
+from math import sqrt, ceil
 
-from data import Map, Bag, Coordinates, SnowArea, Route
-from util import load_map, load_bags, save
+from data import Map, Bag, Coordinates, SnowArea, Route, Circle
+from util import load_map, load_bags, save, cleanup_jumps_to_start
 from checker import segment_dist, segment_time
 from constants import TIMES_MATRIX_PATH, MAP_ID
 
 Matrix = list[list[float]]
 
 
-def make_distance_matrix(vertices: list[Coordinates], snow_areas: list[SnowArea],
-                         force_recalc=False) -> Matrix:
+def make_distance_matrix(
+    vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
+) -> Matrix:
     num_vertices = len(vertices)
     result: Matrix = [[0] * num_vertices for _ in range(num_vertices)]
 
@@ -25,73 +27,84 @@ def make_distance_matrix(vertices: list[Coordinates], snow_areas: list[SnowArea]
             for i in range(num_vertices):
                 for j in range(num_vertices):
                     if i > j:
-                        dist, snow_dist, _ = segment_dist(vertices[i], vertices[j], snow_areas)
+                        dist, snow_dist, _ = segment_dist(
+                            vertices[i], vertices[j], snow_areas
+                        )
                         time = segment_time(dist, snow_dist)
                         result[i][j] = result[j][i] = time
                         pbar.update()
-        with open(TIMES_MATRIX_PATH, 'w') as out:
+        with open(TIMES_MATRIX_PATH, "w") as out:
             json.dump(result, out)
     else:
-        with open(TIMES_MATRIX_PATH, 'r') as inp:
+        with open(TIMES_MATRIX_PATH, "r") as inp:
             result = json.load(inp)
     return result
 
 
-def create_data_model(vertices: list[Coordinates], snow_areas: list[SnowArea],
-                      stack_of_bags: list[Bag]) -> dict:
+def get_outer_points(circle: Circle) -> list[Coordinates]:
+    delta = ceil(sqrt(2 * circle.radius**2))
+    ds = [(0, delta), (delta, 0), (-delta, 0), (0, -delta)]
+    return [Coordinates(circle.center.x + dx, circle.center.y + dy) for (dx, dy) in ds]
+
+
+def create_data_model(
+    vertices: list[Coordinates], snow_areas: list[SnowArea], stack_of_bags: list[Bag]
+) -> dict:
     """Stores the data for the problem."""
     data = {}
-    data['distance_matrix'] = [[round(e) for e in row] for row in
-                               make_distance_matrix(vertices, snow_areas)]
-    data['demands'] = [0] + [1] * (len(vertices) - 1)
-    data['vehicle_capacities'] = [len(bag) for bag in stack_of_bags[::-1]]
-    data['num_vehicles'] = len(stack_of_bags)
-    data['depot'] = 0
+    data["distance_matrix"] = [
+        [round(e) for e in row] for row in make_distance_matrix(vertices, snow_areas)
+    ]
+    data["demands"] = [0] + [1] * (len(vertices) - 1)
+    data["vehicle_capacities"] = [len(bag) for bag in stack_of_bags[::-1]]
+    data["num_vehicles"] = len(stack_of_bags)
+    data["depot"] = 0
     return data
 
 
-def print_solution(vertices: list[Coordinates], data, manager, routing, assignment) -> list[
-    Coordinates]:
+def print_solution(
+    vertices: list[Coordinates], data, manager, routing, assignment
+) -> list[Coordinates]:
     """Prints assignment on console."""
     moves = []
-    print(f'Objective: {assignment.ObjectiveValue()}')
+    print(f"Objective: {assignment.ObjectiveValue()}")
     # Display dropped nodes.
-    dropped_nodes = 'Dropped nodes:'
+    dropped_nodes = "Dropped nodes:"
     for node in range(routing.Size()):
         if routing.IsStart(node) or routing.IsEnd(node):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += ' {}'.format(manager.IndexToNode(node))
+            dropped_nodes += " {}".format(manager.IndexToNode(node))
     print(dropped_nodes)
     # Display routes
     total_distance = 0
     total_load = 0
-    for vehicle_id in range(data['num_vehicles']):
+    for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = "Route for vehicle {}:\n".format(vehicle_id)
         route_distance = 0
         route_load = 0
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
-            route_load += data['demands'][node_index]
+            route_load += data["demands"][node_index]
             moves.append(vertices[node_index])
 
-            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            plan_output += " {0} Load({1}) -> ".format(node_index, route_load)
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
-                                                 route_load)
+                previous_index, index, vehicle_id
+            )
+        plan_output += " {0} Load({1})\n".format(manager.IndexToNode(index), route_load)
         moves.append(vertices[manager.IndexToNode(index)])
 
-        plan_output += 'Time of the route: {} s\n'.format(route_distance)
-        plan_output += 'Load of the route: {}\n'.format(route_load)
+        plan_output += "Time of the route: {} s\n".format(route_distance)
+        plan_output += "Load of the route: {}\n".format(route_load)
         # print(plan_output)
         total_distance += route_distance
         total_load += route_load
-    print('Total time of all routes: {} s'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
+    print("Total time of all routes: {} s".format(total_distance))
+    print("Total Load of all routes: {}".format(total_load))
     return moves
 
 
@@ -102,8 +115,9 @@ def solve(map_data: Map, stack_of_bags: list[Bag]):
     data = create_data_model(vertices, map_data.snow_areas, stack_of_bags)
 
     # Create the routing index manager.
-    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+    )
 
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
@@ -114,7 +128,7 @@ def solve(map_data: Map, stack_of_bags: list[Bag]):
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['distance_matrix'][from_node][to_node]
+        return data["distance_matrix"][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
@@ -126,16 +140,16 @@ def solve(map_data: Map, stack_of_bags: list[Bag]):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
+        return data["demands"][from_node]
 
-    demand_callback_index = routing.RegisterUnaryTransitCallback(
-        demand_callback)
+    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_index,
         0,  # null capacity slack
-        data['vehicle_capacities'],  # vehicle maximum capacities
+        data["vehicle_capacities"],  # vehicle maximum capacities
         True,  # start cumul to zero
-        'Capacity')
+        "Capacity",
+    )
 
     # Allow to drop nodes.
     # penalty = 1000
@@ -145,9 +159,11 @@ def solve(map_data: Map, stack_of_bags: list[Bag]):
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    )
     search_parameters.time_limit.FromSeconds(1)
 
     # Solve the problem.
@@ -158,10 +174,11 @@ def solve(map_data: Map, stack_of_bags: list[Bag]):
         return print_solution(vertices, data, manager, routing, assignment)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sus_map = load_map()
     bags = load_bags()
     moves = solve(sus_map, bags)
     if moves:
         solution = Route(moves=moves, stack_of_bags=bags, map_id=MAP_ID)
-        save(solution, './data/solution_vrp.json')
+        solution.moves = cleanup_jumps_to_start(solution.moves)
+        save(solution, "./data/solution_vrp.json")
