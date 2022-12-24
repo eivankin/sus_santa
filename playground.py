@@ -5,7 +5,7 @@ from util import (
     get_solution_info,
     save_map,
     load_map,
-    save,
+    save, load_bags,
 )
 from data import Route, Coordinates, Line, Circle
 from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
@@ -68,10 +68,7 @@ if __name__ == "__main__":
             for (a, r) in simulated_annealing(rand_path(), objective, mutate)
         ]
 
-    stack_of_bags = []
-    with open("data/bin_packing_result.json", "r") as f:
-        for bag in json.load(f):
-            stack_of_bags.append(bag["gift_ids"])
+    stack_of_bags = load_bags()
 
     moves = []
     base = Coordinates(0, 0)
@@ -113,7 +110,7 @@ if __name__ == "__main__":
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
-    # visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
+    visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)

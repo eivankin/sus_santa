@@ -6,7 +6,7 @@ from constants import (
     INFO_URL_TEMPLATE,
     MAP_FILE_PATH,
 )
-from data import Route, RouteResponse, RoundInfo, Map
+from data import Route, RouteResponse, RoundInfo, Map, Bag
 from requests import post, get
 
 
@@ -76,3 +76,11 @@ def info_about_map(m: Map) -> None:
     print(f"Number of children: {len(m.children)}")
     print(f"Number of gifts: {len(m.gifts)}")
     print(f"Number of snow areas: {len(m.snow_areas)}")
+
+
+def load_bags() -> list[Bag]:
+    stack_of_bags = []
+    with open("data/bin_packing_result_best.json", "r") as f:
+        for bag in json.load(f):
+            stack_of_bags.append(bag["gift_ids"])
+    return stack_of_bags
