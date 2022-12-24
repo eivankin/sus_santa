@@ -1,6 +1,6 @@
-from util import get_map, send_solution, get_solution_info, save_map, load_map
+from util import get_map, send_solution, get_solution_info, save_map, load_map, save
 from data import Route, Coordinates, Line, Circle
-from constants import MAP_ID, MAP_FILE_PATH
+from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
 import os
 from checker import emulate
 import visualizer
@@ -9,6 +9,9 @@ from tqdm import tqdm
 from annealer import simulated_annealing
 from random import uniform
 from math import pi
+
+import warnings
+warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
@@ -103,20 +106,23 @@ if __name__ == "__main__":
     print(sus_solution)
     visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
-    # sus_response = send_solution(sus_solution)
-    # print("=== RESPONSE ===")
-    # print(sus_response)
-    # print("=== INFO ===")
-    # if sus_response.success:
-    #     print(get_solution_info(sus_response.round_id))
-    #     content = None
-    #     try:
-    #         with open(IDS_FILE, "r") as solution_file:
-    #             content = json.load(solution_file)
-    #     except:
-    #         content = {}
-    #     with open(IDS_FILE, "w") as solution_file:
-    #         content[sus_response.round_id] = "second dummy strategy with circle slowing"
-    #         json.dump(content, solution_file)
-    # else:
-    #     print("Unsuccessful")
+    if input('Save solution? y/n: ').lower() in ('y', 'yes'):
+        sus_response = send_solution(sus_solution)
+        print("=== RESPONSE ===")
+        print(sus_response)
+        print("=== INFO ===")
+        if sus_response.success:
+            print(get_solution_info(sus_response.round_id))
+            content = None
+            try:
+                with open(IDS_FILE, "r") as solution_file:
+                    content = json.load(solution_file)
+            except:
+                content = {}
+            with open(IDS_FILE, "w") as solution_file:
+                content[sus_response.round_id] = input()
+                json.dump(content, solution_file)
+            save(sus_solution, f'./data/solution_{sus_response.round_id}.json')
+        else:
+            print("Unsuccessful")
+

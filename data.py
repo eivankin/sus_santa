@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from dataclass_wizard import JSONWizard, json_field
 from math import sqrt, cos, sin, pi
 
+from shapely.geometry import LineString
+from shapely.geometry import Point
+
 Bag = list[int]
 
 
@@ -113,16 +116,13 @@ class BagDescription:
         )
 
 
-from shapely.geometry import LineString
-from shapely.geometry import Point
-
-
 @dataclass
 class Line:
     """Equation of the line in format 'ax + by + c = 0'"""
 
     from_pos: Coordinates
     to_pos: Coordinates
+
     # a: float
     # b: float
     # c: float

@@ -18,14 +18,22 @@ def get_solution_info(solution_id: str) -> RoundInfo:
     return RoundInfo.from_json(response.text)
 
 
+def save(instance, path: str) -> None:
+    with open(path, 'w') as map_file:
+        map_file.write(instance.to_json())
+
+
+def load(cls, path: str):
+    with open(path, 'r') as map_file:
+        return cls.from_json(map_file.read())
+
+
 def save_map(parsed_map: Map) -> None:
-    with open(MAP_FILE_PATH, 'w') as map_file:
-        map_file.write(parsed_map.to_json())
+    save(parsed_map, MAP_FILE_PATH)
 
 
 def load_map() -> Map:
-    with open(MAP_FILE_PATH, 'r') as map_file:
-        return Map.from_json(map_file.read())
+    return load(Map, MAP_FILE_PATH)
 
 
 def info_about_map(m: Map) -> None:
