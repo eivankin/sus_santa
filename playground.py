@@ -3,8 +3,9 @@ from data import Route, Coordinates
 from constants import MAP_ID, MAP_FILE_PATH
 import os
 from checker import emulate
+import visualizer
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
         sus_map = get_map()
         save_map(sus_map)
@@ -20,10 +21,10 @@ if __name__ == '__main__':
         moves.append(Coordinates(child.x, child.y))
         moves.append(Coordinates(0, 0))
 
-    sus_solution = Route(moves=moves, map_id=MAP_ID,
-                         stack_of_bags=stack_of_bags)
-    print('=== SOLUTION ===')
+    sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
+    print("=== SOLUTION ===")
     print(sus_solution)
+    visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
     # sus_response = send_solution(sus_solution)
     # print('=== RESPONSE ===')
