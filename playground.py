@@ -129,7 +129,7 @@ if __name__ == "__main__":
             except:
                 content = {}
             with open(IDS_FILE, "w") as solution_file:
-                content[sus_response.round_id] = input()
+                content[sus_response.round_id] = input("label: ")
                 json.dump(content, solution_file)
             save(sus_solution, f"./data/solution_{sus_response.round_id}.json")
         else:

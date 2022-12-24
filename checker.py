@@ -79,9 +79,11 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
     return RouteData("", "Checker verdict", round(total_time), round(total_dist))
 
 
-if __name__ == '__main__':
-    sol: Route = load(Route, './data/solution_unsuccessful.json')
-    map_data = load_map()
-    print(len(map_data.children))
-    print(len(sum(sol.stack_of_bags, [])))
-    print()
+if __name__ == "__main__":
+    import warnings
+
+    warnings.filterwarnings("ignore")
+
+    sol: Route = load(Route, "./data/solution_01GN1R26P98SQ66PR6NY9YAXSA.json")
+    mp = load_map()
+    print(emulate(sol, mp))

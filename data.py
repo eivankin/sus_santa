@@ -123,51 +123,28 @@ class Line:
     from_pos: Coordinates
     to_pos: Coordinates
 
-    # a: float
-    # b: float
-    # c: float
+    a: float
+    b: float
+    c: float
 
     @classmethod
     def from_two_points(cls, from_pos: Coordinates, to_pos: Coordinates):
-        # dx = to_pos.x - from_pos.x
-        # dy = to_pos.y - from_pos.y
-        # k = dy / dx  # TODO: division by zero
-        # b = to_pos.y - to_pos.x * k
-        return cls(from_pos=from_pos, to_pos=to_pos)
+        dx = to_pos.x - from_pos.x
+        dy = to_pos.y - from_pos.y
+        k = dy / dx if dx else 0
+        b = to_pos.y - to_pos.x * k
+        return cls(from_pos=from_pos, to_pos=to_pos, a=-k, b=1, c=-b)
 
-    # def distance_in_circle(self, circle: "Circle") -> float:
-    #     r_sq = circle.radius**2
-    #     distance_from_center_sq = (
-    #         self.a * circle.center.x + self.b * circle.center.y + self.c
-    #     ) ** 2 / (self.a**2 + self.b**2)
-    #     if distance_from_center_sq >= r_sq:
-    #         return 0
-
-    #     if self.from_pos.in_circle(circle):
-    #         if self.to_pos.in_circle(circle):
-    #             return self.from_pos.dist(self.to_pos)
-    #         else:
-    #             return sqrt(r_sq - distance_from_center_sq) + sqrt(
-    #                 circle.center.dist(self.from_pos) ** 2 - distance_from_center_sq
-    #             )
-    #     elif self.to_pos.in_circle(circle):
-    #         return sqrt(r_sq - distance_from_center_sq) + sqrt(
-    #             circle.center.dist(self.to_pos) ** 2 - distance_from_center_sq
-    #         )
-
-    #     if (circle.center - self.from_pos).vector_dot(circle.center - self.to_pos) <= 0:
-    #         return 2 * sqrt(r_sq - distance_from_center_sq)
-
-    #     return 0
-
-    # TODO: mb this
     def distance_in_circle(self, circle: "Circle") -> float:
         c = Point(circle.center.x, circle.center.y)
-        c = c.buffer(circle.radius).boundary
+        c = c.buffer(circle.radius)
         l = LineString(
             [(self.from_pos.x, self.from_pos.y), (self.to_pos.x, self.to_pos.y)]
         )
-        return c.intersection(l).length
+        intersection = l.intersection(c)
+        length = intersection.length
+        assert length != 0 or intersection.is_empty
+        return length
 
 
 @dataclass
