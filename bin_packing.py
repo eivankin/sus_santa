@@ -110,6 +110,8 @@ def main():
                     res.append(bin_res)
                     with open("bin_packing_result.json", "w") as f:
                         f.write(json.dumps(res))
+        # with open("bin_packing_result.json", "w") as f: # mb down here?
+        #                 f.write(json.dumps(res))
         print()
         print('Number of bins used:', num_bins)
         print('Time = ', solver.WallTime(), ' milliseconds')
