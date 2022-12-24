@@ -4,6 +4,7 @@ from constants import MAP_ID, MAP_FILE_PATH
 import os
 from checker import emulate
 import visualizer
+import json
 
 if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
@@ -13,26 +14,54 @@ if __name__ == "__main__":
         sus_map = load_map()
 
     stack_of_bags = []
-    for gift in sus_map.gifts:
-        stack_of_bags.append([gift.id])
+    with open("data/bin_packing_result.json", "r") as f:
+        for bag in json.load(f):
+            stack_of_bags.append(bag["gift_ids"])
 
+    # TODO: mb reverse stack_of_bags
+
+    # strategy is to target the nearest child until bag is empty (second dummy strategy)
     moves = []
-    for child in sus_map.children:
-        moves.append(Coordinates(child.x, child.y))
+    curr_pos = Coordinates(0, 0)
+    unvisited = set(child_pos for child_pos in sus_map.children)
+    for bag in reversed(
+        stack_of_bags
+    ):  # reversed because in (0,0) santa takes the latest element from the stackOfBags
+        for _ in bag:
+            nearest_child_pos = None
+            metric = 10**10
+            for child_pos in unvisited:
+                d = child_pos.dist(curr_pos)
+                if nearest_child_pos is None or d < metric:
+                    nearest_child_pos = child_pos
+                    metric = d
+            moves.append(nearest_child_pos)
+            curr_pos = nearest_child_pos
+            unvisited.remove(nearest_child_pos)
         moves.append(Coordinates(0, 0))
+        curr_pos = Coordinates(0, 0)
 
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
     visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
-    print(emulate(sus_solution, sus_map))
-    # sus_response = send_solution(sus_solution)
-    # print('=== RESPONSE ===')
-    # print(sus_response)
-    # print('=== INFO ===')
-    # if sus_response.success:
-    #     print(get_solution_info(sus_response.round_id))
-    #     with open('.round_ids.txt', 'a+') as solution_file:
-    #         solution_file.write(sus_response.round_id + "\n")
-    # else:
-    #     print('Unsuccessful')
+    # print(emulate(sus_solution, sus_map))
+    sus_response = send_solution(sus_solution)
+    print("=== RESPONSE ===")
+    print(sus_response)
+    print("=== INFO ===")
+    if sus_response.success:
+        print(get_solution_info(sus_response.round_id))
+        content = None
+        try:
+            with open(".round_ids.json", "r") as solution_file:
+                content = json.load(solution_file)
+        except:
+            content = {}
+        with open(".round_ids.json", "w") as solution_file:
+            content[
+                sus_response.round_id
+            ] = "strategy is to target the nearest child until bag is empty"
+            json.dump(content, solution_file)
+    else:
+        print("Unsuccessful")
