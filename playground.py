@@ -35,7 +35,9 @@ if __name__ == "__main__":
         return sum(l.distance_in_circle(s) for s in circles)
 
     def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
-        segmentation = 2
+        segmentation = int(f.dist(base) // 2000)
+        if segmentation == 0:
+            return []
 
         l = f.dist(base)
         cos_a = f.x / l
@@ -61,16 +63,22 @@ if __name__ == "__main__":
                 res += prev.dist(pos) + 6 * penalty(pos, prev)
                 prev = pos
             res += prev.dist(base) + 6 * penalty(base, prev)
-            return res * 0.001
+            return res
 
         def mutate(path):
             nonlocal f
             mutant = [0] * len(path)
-            for i, pos in enumerate(path):
-                p = retranslate(pos)
+            rpath = [Coordinates(0, 0)]
+            rpath.extend(retranslate(pos) for pos in path)
+            rpath.append(Coordinates(l, 0))
+            for i, p in enumerate(rpath[1:-1]):
+                x_max = rpath[i + 2].x
+                x_min = rpath[i].x
+                p.x = gauss(p.x, 2000)
+                p.x = max(x_min, min(x_max, p.x))
                 y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
                 y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
-                p.y = gauss(p.y, 300)
+                p.y = gauss(p.y, 2000)
                 p.y = max(y_min, min(y_max, p.y))
                 mutant[i] = translate(p)
             return mutant
@@ -94,10 +102,11 @@ if __name__ == "__main__":
                 return objective(self.state)
 
         annealer = PathAnnealer(rand_path())
-        accurate = {"tmax": 100.0, "tmin": 0.0087, "steps": 320, "updates": 0}
-        fast = {"tmax": 100.0, "tmin": 1, "steps": 200, "updates": 0}
-        annealer.set_schedule(fast)
-        return [Coordinates(int(c.x), int(c.y)) for c in annealer.anneal()[0]]
+        annealer.set_schedule({"tmax": 100.0, "tmin": 1, "steps": 320, "updates": 0})
+        best, cost = annealer.anneal()
+        if cost > f.dist(base) + 6 * penalty(base, f):
+            return []
+        return [Coordinates(int(c.x), int(c.y)) for c in best]
 
     stack_of_bags = load_bags()
 
