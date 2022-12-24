@@ -1,3 +1,4 @@
+from copy import deepcopy
 from util import (
     get_map,
     edit_json_file,
@@ -14,8 +15,7 @@ import visualizer
 import json
 from tqdm import tqdm
 from annealer import simulated_annealing
-from random import uniform
-from math import pi
+from random import uniform, gauss
 
 if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
@@ -30,37 +30,61 @@ if __name__ == "__main__":
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
-    def optimal_path_to_base(
-        f: Coordinates, segmentation: int = 5
+    def optimal_path_from_base_to(
+        f: Coordinates, segmentation: int = 10
     ) -> list[Coordinates]:
-        # path = [(a0, r0), (), (), (), ()]  # starting from f, ending with t, r0 > r1 > r2 ..
+        l = f.dist(base)
+        cos_a = f.x / l
+        sin_a = f.y / l
+
+        def translate(pos: Coordinates) -> Coordinates:
+            return Coordinates(
+                pos.x * cos_a - pos.y * sin_a,
+                pos.x * sin_a + pos.y * cos_a,
+            )
+
+        def retranslate(pos: Coordinates) -> Coordinates:
+            return Coordinates(
+                pos.x * cos_a + pos.y * sin_a,
+                pos.y * cos_a - pos.x * sin_a,
+            )
 
         def objective(path):
             nonlocal f
             res = 0
             prev = f
-            for (a, r) in path:
-                pos = Coordinates.from_polar(a, r)
+            for pos in path:
                 res += prev.dist(pos) + 6 * penalty(pos, prev)
                 prev = pos
             res += prev.dist(base)
             return res * 0.001
 
         def mutate(path):
-            return rand_path()
+            nonlocal f
+            mutant = deepcopy(path)
+            for pos in mutant:
+                pos = retranslate(pos)
+                y_max = pos.x * cos_a / sin_a
+                y_min = -pos.x * sin_a / cos_a
+                pos.y = gauss(pos.y, 300)
+                pos.y = max(y_min, min(y_max, pos.y))
+                pos = translate(pos)
+            return mutant
 
         def rand_path():
             nonlocal f
-            res = [None] * 5
-            r = f.dist(base)
+            res = [None] * segmentation
             for i in range(segmentation):
-                r = uniform(10, r)
-                res[i] = (uniform(0, pi / 2), r)
+                x = l * (i + 1) / (segmentation + 1)
+                y_max = x * cos_a / sin_a
+                y_min = -x * sin_a / cos_a
+                y = uniform(y_min, y_max)
+                res[i] = translate(Coordinates(x, y))
             return res
 
         return [
-            Coordinates.from_polar(a, r)
-            for (a, r) in simulated_annealing(rand_path(), objective, mutate)
+            Coordinates(int(c.x), int(c.y))
+            for c in simulated_annealing(rand_path(), objective, mutate)
         ]
 
     stack_of_bags = []
@@ -94,14 +118,14 @@ if __name__ == "__main__":
                         metric = m
                 if i == 0:
                     # go to the first child using segmented path
-                    for pos in reversed(optimal_path_to_base(nearest_child_pos)):
+                    for pos in optimal_path_from_base_to(nearest_child_pos):
                         update_curr_pos(pos)
                 update_curr_pos(nearest_child_pos)
                 unvisited.remove(nearest_child_pos)
                 pbar.update(1)
 
             # go back using segmented path
-            for pos in optimal_path_to_base(curr_pos):
+            for pos in reversed(optimal_path_from_base_to(curr_pos)):
                 update_curr_pos(pos)
             update_curr_pos(base)
 
