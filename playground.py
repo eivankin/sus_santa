@@ -1,6 +1,6 @@
 from util import get_map, send_solution, get_solution_info, save_map, load_map
 from data import Route, Coordinates
-from constants import MAP_ID, MAP_FILE_PATH
+from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
 import os
 from checker import emulate
 import visualizer
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         for bag in json.load(f):
             stack_of_bags.append(bag["gift_ids"])
 
-    # TODO: mb reverse stack_of_bags
+    stack_of_bags.reverse()
 
     # strategy is to target the nearest child until bag is empty (second dummy strategy)
     moves = []
@@ -54,14 +54,12 @@ if __name__ == "__main__":
         print(get_solution_info(sus_response.round_id))
         content = None
         try:
-            with open(".round_ids.json", "r") as solution_file:
+            with open(IDS_FILE, "r") as solution_file:
                 content = json.load(solution_file)
         except:
             content = {}
-        with open(".round_ids.json", "w") as solution_file:
-            content[
-                sus_response.round_id
-            ] = "strategy is to target the nearest child until bag is empty"
+        with open(IDS_FILE, "w") as solution_file:
+            content[sus_response.round_id] = "msg"
             json.dump(content, solution_file)
     else:
         print("Unsuccessful")
