@@ -1,4 +1,3 @@
-from copy import deepcopy
 from util import (
     get_map,
     edit_json_file,
@@ -14,10 +13,9 @@ from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
 import os
 from checker import emulate
 import visualizer
-import json
 from tqdm import tqdm
-from annealer import simulated_annealing
 from random import uniform, gauss
+from simanneal import Annealer
 
 import warnings
 
@@ -36,9 +34,9 @@ if __name__ == "__main__":
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
-    def optimal_path_from_base_to(
-        f: Coordinates, segmentation: int = 10
-    ) -> list[Coordinates]:
+    def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
+        segmentation = 2
+
         l = f.dist(base)
         cos_a = f.x / l
         sin_a = f.y / l
@@ -62,19 +60,19 @@ if __name__ == "__main__":
             for pos in path:
                 res += prev.dist(pos) + 6 * penalty(pos, prev)
                 prev = pos
-            res += prev.dist(base)
+            res += prev.dist(base) + 6 * penalty(base, prev)
             return res * 0.001
 
         def mutate(path):
             nonlocal f
-            mutant = deepcopy(path)
-            for pos in mutant:
-                pos = retranslate(pos)
-                y_max = pos.x * cos_a / sin_a
-                y_min = -pos.x * sin_a / cos_a
-                pos.y = gauss(pos.y, 10)
-                pos.y = max(y_min, min(y_max, pos.y))
-                pos = translate(pos)
+            mutant = [0] * len(path)
+            for i, pos in enumerate(path):
+                p = retranslate(pos)
+                y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
+                y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
+                p.y = gauss(p.y, 300)
+                p.y = max(y_min, min(y_max, p.y))
+                mutant[i] = translate(p)
             return mutant
 
         def rand_path():
@@ -82,16 +80,24 @@ if __name__ == "__main__":
             res = [None] * segmentation
             for i in range(segmentation):
                 x = l * (i + 1) / (segmentation + 1)
-                y_max = x * cos_a / sin_a
-                y_min = -x * sin_a / cos_a
+                y_max = min(x * cos_a / sin_a, (10000 - x * sin_a) / cos_a)
+                y_min = max(-x * sin_a / cos_a, (-10000 + x * cos_a) / sin_a)
                 y = uniform(y_min, y_max)
                 res[i] = translate(Coordinates(x, y))
             return res
 
-        return [
-            Coordinates(int(c.x), int(c.y))
-            for c in simulated_annealing(rand_path(), objective, mutate)
-        ]
+        class PathAnnealer(Annealer):
+            def move(self):
+                self.state = mutate(self.state)
+
+            def energy(self):
+                return objective(self.state)
+
+        annealer = PathAnnealer(rand_path())
+        annealer.set_schedule(
+            {"tmax": 100.0, "tmin": 0.0087, "steps": 320, "updates": 0}
+        )
+        return [Coordinates(int(c.x), int(c.y)) for c in annealer.anneal()[0]]
 
     stack_of_bags = load_bags()
 
@@ -105,27 +111,27 @@ if __name__ == "__main__":
         curr_pos = value
 
     unvisited = set(child_pos for child_pos in sus_map.children)
-    with tqdm(total=sum(len(bag) for bag in stack_of_bags)) as pbar:
-        for bag in reversed(stack_of_bags):  # since it's a stack, the order is reversed
-            for i, _ in enumerate(bag):
-                nearest_child_pos = None
-                metric = 10**100
-                for child_pos in unvisited:
-                    m = child_pos.dist(curr_pos)
-                    if m >= metric:
-                        continue
-                    # m = out_circ + 7*in_circ = (m - in_circ) + 7 * in_circ
-                    m += 6 * penalty(child_pos, curr_pos)
-                    if nearest_child_pos is None or m < metric:
-                        nearest_child_pos = child_pos
-                        metric = m
-                if i == 0:
-                    # go to the first child using segmented path
-                    moves.extend(optimal_path_from_base_to(nearest_child_pos))
-                    curr_pos = nearest_child_pos
-                update_curr_pos(nearest_child_pos)
-                unvisited.remove(nearest_child_pos)
-                pbar.update(1)
+    for bag in tqdm(
+        list(reversed(stack_of_bags))
+    ):  # since it's a stack, the order is reversed
+        for i, _ in enumerate(bag):
+            nearest_child_pos = None
+            metric = 10**100
+            for child_pos in unvisited:
+                m = child_pos.dist(curr_pos)
+                if m >= metric:
+                    continue
+                # m = out_circ + 7*in_circ = (m - in_circ) + 7 * in_circ
+                m += 6 * penalty(child_pos, curr_pos)
+                if nearest_child_pos is None or m < metric:
+                    nearest_child_pos = child_pos
+                    metric = m
+            if i == 0:
+                # go to the first child using segmented path
+                moves.extend(optimal_path_from_base_to(nearest_child_pos))
+                curr_pos = nearest_child_pos
+            update_curr_pos(nearest_child_pos)
+            unvisited.remove(nearest_child_pos)
 
             # go back using segmented path
             moves.extend(reversed(optimal_path_from_base_to(curr_pos)))

@@ -1,6 +1,5 @@
 import os
 from random import gauss, uniform
-from annealer import simulated_annealing
 from constants import MAP_FILE_PATH
 from data import Circle, Coordinates, Line, Route
 from util import get_map, load_map, save_map
@@ -22,7 +21,7 @@ if __name__ == "__main__":
         return sum(l.distance_in_circle(s) for s in circles)
 
     def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
-        segmentation = 5
+        segmentation = 2
 
         l = f.dist(base)
         cos_a = f.x / l
@@ -81,7 +80,11 @@ if __name__ == "__main__":
                 return objective(self.state)
 
         annealer = PathAnnealer(rand_path())
-        annealer.set_schedule(annealer.auto(minutes=0.1))
+        # sc = annealer.auto(minutes=0.1)
+        # print(sc)
+        annealer.set_schedule(
+            {"tmax": 100.0, "tmin": 0.0087, "steps": 320, "updates": 100}
+        )
         return [Coordinates(int(c.x), int(c.y)) for c in annealer.anneal()[0]]
 
     end = Coordinates(3000, 9000)
