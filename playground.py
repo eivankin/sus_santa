@@ -1,4 +1,12 @@
-from util import get_map, send_solution, get_solution_info, save_map, load_map, save
+from util import (
+    get_map,
+    edit_json_file,
+    send_solution,
+    get_solution_info,
+    save_map,
+    load_map,
+    save
+)
 from data import Route, Coordinates, Line, Circle
 from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
 import os
@@ -54,7 +62,10 @@ if __name__ == "__main__":
 
         return [
             Coordinates.from_polar(a, r)
-            for (a, r) in simulated_annealing(rand_path(), objective, mutate)
+            for (
+                a,
+                r,
+            ) in rand_path()  # simulated_annealing(rand_path(), objective, mutate)
         ]
 
     stack_of_bags = []
