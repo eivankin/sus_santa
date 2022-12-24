@@ -9,7 +9,7 @@ from util import (
     load_bags,
 )
 from data import Route, Coordinates, Line, Circle
-from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
+from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE, PRECALC_BASE_FILE
 import os
 from checker import emulate
 import visualizer
@@ -30,11 +30,22 @@ if __name__ == "__main__":
 
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
 
+    cache = {}
+    with edit_json_file(PRECALC_BASE_FILE) as precalc:
+        for k, v in precalc.items():
+            k = int(k)
+            v = [Coordinates.from_dict(e) for e in v]
+            cache[sus_map.children[k]] = v
+
     def penalty(f: Coordinates, t: Coordinates) -> float:
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
     def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
+        if f in cache:
+            return cache[f]
+        else:
+            print("cache miss", f'"{f.x} {f.y}"')
         segmentation = int(f.dist(base) // 2000)
         if segmentation == 0:
             return []
@@ -102,7 +113,7 @@ if __name__ == "__main__":
                 return objective(self.state)
 
         annealer = PathAnnealer(rand_path())
-        annealer.set_schedule({"tmax": 100.0, "tmin": 1, "steps": 320, "updates": 0})
+        annealer.set_schedule({"tmax": 100.0, "tmin": 1, "steps": 50, "updates": 0})
         best, cost = annealer.anneal()
         if cost > f.dist(base) + 6 * penalty(base, f):
             return []
@@ -113,11 +124,6 @@ if __name__ == "__main__":
     moves = []
     base = Coordinates(0, 0)
     curr_pos = Coordinates(0, 0)
-
-    def update_curr_pos(value):
-        global curr_pos
-        moves.append(value)
-        curr_pos = value
 
     unvisited = set(child_pos for child_pos in sus_map.children)
     for bag in tqdm(
@@ -139,7 +145,9 @@ if __name__ == "__main__":
                 # go to the first child using segmented path
                 moves.extend(optimal_path_from_base_to(nearest_child_pos))
                 curr_pos = nearest_child_pos
-            update_curr_pos(nearest_child_pos)
+            else:
+                moves.append(nearest_child_pos)
+                curr_pos = nearest_child_pos
             unvisited.remove(nearest_child_pos)
 
         # go back using segmented path

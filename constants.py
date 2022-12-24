@@ -17,6 +17,8 @@ TIMES_MATRIX_PATH = "./data/matrix.json"
 
 IDS_FILE = ".round_ids.json"
 
+PRECALC_BASE_FILE = "./data/precalc_base.json"
+
 # Game constants
 BAG_MAX_WEIGHT = 200
 BAG_MAX_VOLUME = 100
