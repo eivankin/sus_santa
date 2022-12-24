@@ -6,6 +6,7 @@ from util import (
     get_solution_info,
     save_map,
     load_map,
+    save,
 )
 from data import Route, Coordinates, Line, Circle
 from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
@@ -16,6 +17,10 @@ import json
 from tqdm import tqdm
 from annealer import simulated_annealing
 from random import uniform, gauss
+
+import warnings
+
+warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     if not os.path.exists(MAP_FILE_PATH):
@@ -132,18 +137,25 @@ if __name__ == "__main__":
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
-    visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
-    label = "second dummy strategy with circle slowing"
-    with edit_json_file("sus.json") as j:
-        j[label] = sus_solution.to_dict()
+    # visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
-    # sus_response = send_solution(sus_solution)
-    # print("=== RESPONSE ===")
-    # print(sus_response)
-    # print("=== INFO ===")
-    # if sus_response.success:
-    #     print(get_solution_info(sus_response.round_id))
-    #     with edit_json_file(IDS_FILE) as ids:
-    #         ids[sus_response.round_id] = label
-    # else:
-    #     print("Unsuccessful")
+    if input("Send solution? y/n: ").lower() in ("y", "yes"):
+        sus_response = send_solution(sus_solution)
+        print("=== RESPONSE ===")
+        print(sus_response)
+        print("=== INFO ===")
+        if sus_response.success:
+            print(get_solution_info(sus_response.round_id))
+            content = None
+            try:
+                with open(IDS_FILE, "r") as solution_file:
+                    content = json.load(solution_file)
+            except:
+                content = {}
+            with open(IDS_FILE, "w") as solution_file:
+                content[sus_response.round_id] = input("label: ")
+                json.dump(content, solution_file)
+            save(sus_solution, f"./data/solution_{sus_response.round_id}.json")
+        else:
+            print("Unsuccessful")
+            save(sus_solution, "./data/solution_unsuccessful.json")
