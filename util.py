@@ -46,12 +46,12 @@ def get_solution_info(solution_id: str) -> RoundInfo:
 
 
 def save(instance, path: str) -> None:
-    with open(path, 'w') as map_file:
+    with open(path, "w") as map_file:
         map_file.write(instance.to_json())
 
 
 def load(cls, path: str):
-    with open(path, 'r') as map_file:
+    with open(path, "r") as map_file:
         return cls.from_json(map_file.read())
 
 
