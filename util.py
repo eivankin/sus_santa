@@ -1,6 +1,33 @@
-from constants import SUBMISSION_URL, AUTH_HEADER, MAP_URL, INFO_URL_TEMPLATE, MAP_FILE_PATH
+import json
+from constants import (
+    SUBMISSION_URL,
+    AUTH_HEADER,
+    MAP_URL,
+    INFO_URL_TEMPLATE,
+    MAP_FILE_PATH,
+)
 from data import Route, RouteResponse, RoundInfo, Map
 from requests import post, get
+
+
+class edit_json_file:
+    def __init__(self, path, default={}):
+        self.path = path
+        self.default = default
+
+    def __enter__(self):
+        try:
+            tmp = open(self.path, "r")
+            self.res = json.load(tmp)
+            tmp.close()
+        except:
+            self.res = self.default
+        self.file = open(self.path, "w")
+        return self.res
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        json.dump(self.res, self.file)
+        self.file.close()
 
 
 def send_solution(solution: Route) -> RouteResponse:
@@ -19,17 +46,17 @@ def get_solution_info(solution_id: str) -> RoundInfo:
 
 
 def save_map(parsed_map: Map) -> None:
-    with open(MAP_FILE_PATH, 'w') as map_file:
+    with open(MAP_FILE_PATH, "w") as map_file:
         map_file.write(parsed_map.to_json())
 
 
 def load_map() -> Map:
-    with open(MAP_FILE_PATH, 'r') as map_file:
+    with open(MAP_FILE_PATH, "r") as map_file:
         return Map.from_json(map_file.read())
 
 
 def info_about_map(m: Map) -> None:
-    print('=== MAP INFO ===')
+    print("=== MAP INFO ===")
     min_x, min_y, max_x, max_y = 1e10, 1e10, 0, 0
     for child in m.children:
         min_x = min(min_x, child.x)
