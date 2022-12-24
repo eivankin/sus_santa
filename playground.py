@@ -18,8 +18,6 @@ if __name__ == "__main__":
         for bag in json.load(f):
             stack_of_bags.append(bag["gift_ids"])
 
-    stack_of_bags.reverse()
-
     # strategy is to target the nearest child until bag is empty (second dummy strategy)
     moves = []
     curr_pos = Coordinates(0, 0)
@@ -57,7 +55,7 @@ if __name__ == "__main__":
         except:
             content = {}
         with open(IDS_FILE, "w") as solution_file:
-            content[sus_response.round_id] = "reversed, but not reversed"
+            content[sus_response.round_id] = "forward, forward"
             json.dump(content, solution_file)
     else:
         print("Unsuccessful")

@@ -19,7 +19,7 @@ if __name__ == "__main__":
             print(f'"{msg}"')
             if round_id not in status_cache:
                 solinf = get_solution_info(round_id)
-                if solinf.data.status == "processed":
+                if solinf.data.status != "pending":
                     status_cache[round_id] = solinf.to_dict()
             else:
                 solinf = RoundInfo.from_dict(status_cache[round_id])
