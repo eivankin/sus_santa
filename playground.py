@@ -6,7 +6,8 @@ from util import (
     get_solution_info,
     save_map,
     load_map,
-    save, load_bags,
+    save,
+    load_bags,
 )
 from data import Route, Coordinates, Line, Circle
 from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE
@@ -142,15 +143,8 @@ if __name__ == "__main__":
         print("=== INFO ===")
         if sus_response.success:
             print(get_solution_info(sus_response.round_id))
-            content = None
-            try:
-                with open(IDS_FILE, "r") as solution_file:
-                    content = json.load(solution_file)
-            except:
-                content = {}
-            with open(IDS_FILE, "w") as solution_file:
-                content[sus_response.round_id] = input("label: ")
-                json.dump(content, solution_file)
+            with edit_json_file(IDS_FILE) as solution:
+                solution[sus_response.round_id] = input("label: ")
             save(sus_solution, f"./data/solution_{sus_response.round_id}.json")
         else:
             print("Unsuccessful")
