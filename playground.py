@@ -30,7 +30,9 @@ if __name__ == "__main__":
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
-    def optimal_path_to_base(f: Coordinates) -> list[Coordinates]:
+    def optimal_path_to_base(
+        f: Coordinates, segmentation: int = 5
+    ) -> list[Coordinates]:
         # path = [(a0, r0), (), (), (), ()]  # starting from f, ending with t, r0 > r1 > r2 ..
 
         def objective(path):
@@ -38,7 +40,7 @@ if __name__ == "__main__":
             res = 0
             prev = f
             for (a, r) in path:
-                pos = Coordinates.from_polar(r, a)
+                pos = Coordinates.from_polar(a, r)
                 res += prev.dist(pos) + 6 * penalty(pos, prev)
                 prev = pos
             res += prev.dist(base)
@@ -51,17 +53,14 @@ if __name__ == "__main__":
             nonlocal f
             res = [None] * 5
             r = f.dist(base)
-            for i in range(5):
+            for i in range(segmentation):
                 r = uniform(10, r)
                 res[i] = (uniform(0, pi / 2), r)
             return res
 
         return [
             Coordinates.from_polar(a, r)
-            for (
-                a,
-                r,
-            ) in rand_path()  # simulated_annealing(rand_path(), objective, mutate)
+            for (a, r) in simulated_annealing(rand_path(), objective, mutate)
         ]
 
     stack_of_bags = []
@@ -97,9 +96,7 @@ if __name__ == "__main__":
                     # go to the first child using segmented path
                     for pos in reversed(optimal_path_to_base(nearest_child_pos)):
                         update_curr_pos(pos)
-                    update_curr_pos(nearest_child_pos)
-                else:
-                    update_curr_pos(nearest_child_pos)
+                update_curr_pos(nearest_child_pos)
                 unvisited.remove(nearest_child_pos)
                 pbar.update(1)
 
