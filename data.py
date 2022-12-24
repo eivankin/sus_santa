@@ -168,3 +168,18 @@ class Line:
             [(self.from_pos.x, self.from_pos.y), (self.to_pos.x, self.to_pos.y)]
         )
         return c.intersection(l).length
+
+
+@dataclass
+class EmulatorReportSegment(JSONWizard):
+    from_pos: Coordinates
+    to_pos: Coordinates
+    distance: float
+    distances_in_snow: list[float]
+
+
+@dataclass
+class EmulatorReport(JSONWizard):
+    total_distance: float
+    distance_in_snow: float
+    segments: list[EmulatorReportSegment]

@@ -106,7 +106,7 @@ if __name__ == "__main__":
     print(sus_solution)
     visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
-    if input('Save solution? y/n: ').lower() in ('y', 'yes'):
+    if input('Send solution? y/n: ').lower() in ('y', 'yes'):
         sus_response = send_solution(sus_solution)
         print("=== RESPONSE ===")
         print(sus_response)
