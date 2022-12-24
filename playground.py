@@ -24,12 +24,10 @@ if __name__ == "__main__":
     moves = []
     curr_pos = Coordinates(0, 0)
     unvisited = set(child_pos for child_pos in sus_map.children)
-    for bag in reversed(
-        stack_of_bags
-    ):  # reversed because in (0,0) santa takes the latest element from the stackOfBags
+    for bag in stack_of_bags:
         for _ in bag:
             nearest_child_pos = None
-            metric = 10**10
+            metric = 10**100
             for child_pos in unvisited:
                 d = child_pos.dist(curr_pos)
                 if nearest_child_pos is None or d < metric:
@@ -59,7 +57,7 @@ if __name__ == "__main__":
         except:
             content = {}
         with open(IDS_FILE, "w") as solution_file:
-            content[sus_response.round_id] = "msg"
+            content[sus_response.round_id] = "reversed, but not reversed"
             json.dump(content, solution_file)
     else:
         print("Unsuccessful")
