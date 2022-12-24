@@ -10,8 +10,8 @@ from data import (
     EmulatorReportSegment,
     SnowArea
 )
-from constants import BAG_MAX_WEIGHT, BAG_MAX_VOLUME, BASE_SPEED, SNOW_SPEED
-from util import save, load, load_map
+from constants import BAG_MAX_WEIGHT, BAG_MAX_VOLUME, BASE_SPEED, SNOW_SPEED, IDS_FILE
+from util import save, load, load_map, send_solution, get_solution_info, edit_json_file
 
 
 def is_bag_valid(bag: BagDescription) -> bool:
@@ -64,6 +64,7 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
             curr_bag = bags.pop().copy()
 
         dist, snow_dist, distances_in_snow = segment_dist(curr_pos, next_pos, map_data.snow_areas)
+        assert dist > 0
         total_dist += dist
         tot_snow += snow_dist
         total_time += segment_time(dist, snow_dist)
@@ -95,6 +96,22 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
-    sol: Route = load(Route, "./data/solution_01GN1R26P98SQ66PR6NY9YAXSA.json")
+    sol: Route = load(Route, "./data/solution_vrp.json")
+    moves = [Coordinates(0, 0)]
+    for c in sol.moves:
+        if c != moves[-1]:
+            moves.append(c)
+
+    sol.moves = moves[1:]
     mp = load_map()
     print(emulate(sol, mp))
+    sus_response = send_solution(sol)
+    print("=== RESPONSE ===")
+    print(sus_response)
+    print("=== INFO ===")
+    if sus_response.success:
+        print(get_solution_info(sus_response.round_id))
+        with edit_json_file(IDS_FILE) as solution:
+            solution[sus_response.round_id] = input("label: ")
+    else:
+        print("Unsuccessful")
