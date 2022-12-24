@@ -97,11 +97,11 @@ if __name__ == "__main__":
             return []
         return [Coordinates(int(c.x), int(c.y)) for c in best]
 
-    end = Coordinates(2000, 3000)
+    end = Coordinates(8000, 9600)
     base = Coordinates(0, 0)
     path = [base]
     path.extend(optimal_path_from_base_to(end))
     path.append(end)
 
     r = Route(path, None, None)
-    visualize_route(sus_map, r).save("data/route.png")
+    # visualize_route(sus_map, r).save("data/route.png")
