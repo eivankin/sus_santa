@@ -116,7 +116,7 @@ if __name__ == "__main__":
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
-    visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
+    # visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)
@@ -137,3 +137,4 @@ if __name__ == "__main__":
             save(sus_solution, f"./data/solution_{sus_response.round_id}.json")
         else:
             print("Unsuccessful")
+            save(sus_solution, "./data/solution_unsuccessful.json")

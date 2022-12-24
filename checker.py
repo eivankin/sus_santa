@@ -10,7 +10,7 @@ from data import (
     EmulatorReportSegment,
 )
 from constants import BAG_MAX_WEIGHT, BAG_MAX_VOLUME, BASE_SPEED, SNOW_SPEED
-from util import save
+from util import save, load, load_map
 
 
 def is_bag_valid(bag: BagDescription) -> bool:
@@ -32,7 +32,7 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
     children = set(map_data.children)
     bags = solution.stack_of_bags.copy()
     curr_pos = start
-    curr_bag = bags.pop()
+    curr_bag = bags.pop().copy()
 
     total_dist = 0
     total_time = 0
@@ -43,7 +43,7 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
             curr_bag.pop()
 
         if not curr_bag and curr_pos == start:
-            curr_bag = bags.pop()
+            curr_bag = bags.pop().copy()
 
         dist = curr_pos.dist(next_pos)
         total_dist += dist
@@ -77,3 +77,11 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
     )
 
     return RouteData("", "Checker verdict", round(total_time), round(total_dist))
+
+
+if __name__ == '__main__':
+    sol: Route = load(Route, './data/solution_unsuccessful.json')
+    map_data = load_map()
+    print(len(map_data.children))
+    print(len(sum(sol.stack_of_bags, [])))
+    print()

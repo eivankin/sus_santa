@@ -56,7 +56,7 @@ class Circle:
 @dataclass
 class Route(JSONWizard):
     moves: list[Coordinates]
-    stack_of_bags: list[Bag]
+    stack_of_bags: list[Bag] = json_field("stackOfBags", all=True)
     map_id: str = json_field("mapID", all=True)
 
 
