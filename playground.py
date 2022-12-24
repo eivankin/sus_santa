@@ -94,9 +94,9 @@ if __name__ == "__main__":
                 return objective(self.state)
 
         annealer = PathAnnealer(rand_path())
-        annealer.set_schedule(
-            {"tmax": 100.0, "tmin": 0.0087, "steps": 320, "updates": 0}
-        )
+        accurate = {"tmax": 100.0, "tmin": 0.0087, "steps": 320, "updates": 0}
+        fast = {"tmax": 100.0, "tmin": 1, "steps": 200, "updates": 0}
+        annealer.set_schedule(fast)
         return [Coordinates(int(c.x), int(c.y)) for c in annealer.anneal()[0]]
 
     stack_of_bags = load_bags()
@@ -133,9 +133,9 @@ if __name__ == "__main__":
             update_curr_pos(nearest_child_pos)
             unvisited.remove(nearest_child_pos)
 
-            # go back using segmented path
-            moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
-            curr_pos = base
+        # go back using segmented path
+        moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
+        curr_pos = base
 
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
