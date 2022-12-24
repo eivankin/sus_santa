@@ -14,8 +14,8 @@ class Coordinates(JSONWizard):
     y: int
 
     @classmethod
-    def from_polar(cls, r: int, theta: int):
-        return Coordinates(r * cos(theta), r * sin(theta))
+    def from_polar(cls, a: int, r: int):
+        return Coordinates(r * cos(a), r * sin(a))
 
     def dist(self, to: "Coordinates") -> float:
         """Euclidean distance to other coordinates"""
