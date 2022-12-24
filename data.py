@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclass_wizard import JSONWizard, json_field
-from math import sqrt
+from math import sqrt, cos, sin, pi
 
 Bag = list[int]
 
@@ -9,6 +9,10 @@ Bag = list[int]
 class Coordinates(JSONWizard):
     x: int
     y: int
+
+    @classmethod
+    def from_polar(cls, r: int, theta: int):
+        return Coordinates(r * cos(theta), r * sin(theta))
 
     def dist(self, to: "Coordinates") -> float:
         """Euclidean distance to other coordinates"""

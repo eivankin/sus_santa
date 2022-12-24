@@ -1,6 +1,5 @@
 from PIL import Image, ImageDraw
-from data import Map, Route
-
+from data import Coordinates, Map, Route
 from util import load_map, info_about_map
 
 IMAGE_SIZE = 10000, 10000
