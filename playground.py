@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 pos = retranslate(pos)
                 y_max = pos.x * cos_a / sin_a
                 y_min = -pos.x * sin_a / cos_a
-                pos.y = gauss(pos.y, 300)
+                pos.y = gauss(pos.y, 10)
                 pos.y = max(y_min, min(y_max, pos.y))
                 pos = translate(pos)
             return mutant
@@ -123,16 +123,15 @@ if __name__ == "__main__":
                         metric = m
                 if i == 0:
                     # go to the first child using segmented path
-                    for pos in optimal_path_from_base_to(nearest_child_pos):
-                        update_curr_pos(pos)
+                    moves.extend(optimal_path_from_base_to(nearest_child_pos))
+                    curr_pos = nearest_child_pos
                 update_curr_pos(nearest_child_pos)
                 unvisited.remove(nearest_child_pos)
                 pbar.update(1)
 
             # go back using segmented path
-            for pos in reversed(optimal_path_from_base_to(curr_pos)):
-                update_curr_pos(pos)
-            update_curr_pos(base)
+            moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
+            curr_pos = base
 
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
