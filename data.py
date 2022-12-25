@@ -38,6 +38,13 @@ class Coordinates(JSONWizard):
     def vector_dot(self, other: "Coordinates") -> int:
         return self.x * other.x + self.y * other.y
 
+    @classmethod
+    def from_str(cls, s: str) -> "Coordinates":
+        return cls(*map(int, s.split()))
+
+    def to_str(self):
+        return f"{self.x} {self.y}"
+
 
 @dataclass
 class Circle:
@@ -113,7 +120,7 @@ class BagDescription:
 
 
 @dataclass
-class Path:
+class Path(JSONWizard):
     path: list[Coordinates]
     length: float
 
