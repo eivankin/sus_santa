@@ -42,6 +42,16 @@ def rand_path_from_base(segmentation, cos_a, sin_a, l):
     return res
 
 
+def straight_path_from_base(segmentation, cos_a, sin_a, l):
+    # context aware
+    res = [None] * segmentation
+    for i in range(segmentation):
+        x = l * (i + 1) / (segmentation + 1)
+        y = 0
+        res[i] = translate(Coordinates(x, y), cos_a, sin_a)
+    return res
+
+
 @dataclass
 class PathFromBaseMutator:
     x_var: int
@@ -195,7 +205,7 @@ def main():
                         "data/path.png"
                     )
     else:
-        segmentation = 2
+        segmentation = int(point.dist(base) // 2000)
         print("linear: ", base.dist(point) + 6 * penalty(base, point))
         with read_json_file(PRECALC_BASE_FILE) as res:
             if str(args.index) not in res:
@@ -206,9 +216,9 @@ def main():
 
         best_path = OprimalPathFromBaseFinder(
             segmentation,
-            PathFromBaseMutator(4000, 4000).mutate,
+            PathFromBaseMutator(1000, 1000).mutate,
             objective,
-            schedule={"tmax": 1000, "tmin": 1, "steps": 3e3, "updates": 1e3},
+            schedule={"tmax": 1000, "tmin": 10, "steps": 500, "updates": 500},
         ).optimal_path(point)
 
         with edit_json_file(PRECALC_BASE_FILE) as res:
