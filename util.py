@@ -30,6 +30,24 @@ class edit_json_file:
         self.file.close()
 
 
+class read_json_file:
+    def __init__(self, path, default={}):
+        self.path = path
+        self.default = default
+
+    def __enter__(self):
+        try:
+            tmp = open(self.path, "r")
+            self.res = json.load(tmp)
+            tmp.close()
+        except:
+            self.res = self.default
+        return self.res
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 def send_solution(solution: Route) -> RouteResponse:
     data = solution.to_dict()
     response = post(SUBMISSION_URL, json=data, headers=AUTH_HEADER)
