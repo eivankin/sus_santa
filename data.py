@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+import numba
 from dataclass_wizard import JSONWizard, json_field
 from math import sqrt
 
@@ -38,6 +40,13 @@ class Coordinates(JSONWizard):
 
     def vector_dot(self, other: "Coordinates") -> int:
         return self.x * other.x + self.y * other.y
+
+    @classmethod
+    def from_str(cls, s: str) -> "Coordinates":
+        return cls(*map(int, s.split()))
+
+    def to_str(self):
+        return f"{self.x} {self.y}"
 
 
 @dataclass
@@ -114,9 +123,14 @@ class BagDescription:
 
 
 @dataclass
-class Path:
+class Path(JSONWizard):
     path: list[Coordinates]
     length: float
+
+
+@numba.njit
+def in_circle(x, y, cx, cy, r):
+    return (x - cx) ** 2 + (y - cy) ** 2 <= r ** 2
 
 
 @dataclass
@@ -138,16 +152,57 @@ class Line:
         b = to_pos.y - to_pos.x * k
         return cls(from_pos=from_pos, to_pos=to_pos, a=-k, b=1, c=-b)
 
-    def distance_in_circle(self, circle: "Circle") -> float:
-        c = Point(circle.center.x, circle.center.y)
-        c = c.buffer(circle.radius)
-        l = LineString(
-            [(self.from_pos.x, self.from_pos.y), (self.to_pos.x, self.to_pos.y)]
-        )
-        intersection = l.intersection(c)
-        length = intersection.length
-        assert length != 0 or intersection.is_empty
-        return length
+    def distance_in_circle(self, circle: "Circle", use_old=False) -> float:
+        if use_old:
+            c = Point(circle.center.x, circle.center.y)
+            c = c.buffer(circle.radius)
+            l = LineString(
+                [(self.from_pos.x, self.from_pos.y), (self.to_pos.x, self.to_pos.y)]
+            )
+            intersection = l.intersection(c)
+            length = intersection.length
+            assert length != 0 or intersection.is_empty
+            return length
+
+        return Line._distance_in_circle(
+            self.from_pos.x, self.from_pos.y,
+            self.to_pos.x, self.to_pos.y,
+            circle.center.x, circle.center.y, circle.radius)
+
+    @staticmethod
+    @numba.njit
+    def _distance_in_circle(p1x, p1y, p2x, p2y, cx, cy, r):
+        p1_in, p2_in = in_circle(p1x, p1y, cx, cy, r), in_circle(p2x, p2y, cx, cy, r)
+        if p1_in and p2_in:
+            return ((p1x - p2x) ** 2 + (p1y - p2y) ** 2) ** .5
+
+        (x1, y1), (x2, y2) = (p1x - cx, p1y - cy), (p2x - cx, p2y - cy)
+        dx, dy = (x2 - x1), (y2 - y1)
+        dr = (dx ** 2 + dy ** 2) ** .5
+        big_d = x1 * y2 - x2 * y1
+        discriminant = r ** 2 * dr ** 2 - big_d ** 2
+
+        if discriminant < 0:
+            return 0
+
+        intersections = [
+            (cx + (big_d * dy + sign * (-1 if dy < 0 else 1) * dx * discriminant ** .5) / dr ** 2,
+             cy + (-big_d * dx + sign * abs(dy) * discriminant ** .5) / dr ** 2)
+            for sign in ((1, -1) if dy < 0 else (-1, 1))]  # This makes sure the order along the segment is correct
+        fraction_along_segment = [(xi - p1x) / dx if abs(dx) > abs(dy) else (yi - p1y) / dy for xi, yi in
+                                  intersections]
+        intersections = [pt for pt, frac in zip(intersections, fraction_along_segment) if 0 <= frac <= 1]
+
+        if p1_in:
+            intersections.append((p1x, p1y))
+        if p2_in:
+            intersections.append((p2x, p2y))
+
+        if len(intersections) < 2:
+            return 0
+
+        (x1, y1), (x2, y2) = intersections
+        return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** .5
 
 
 @dataclass

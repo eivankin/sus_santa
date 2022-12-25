@@ -1,3 +1,4 @@
+import json
 from util import (
     get_map,
     edit_json_file,
@@ -9,7 +10,7 @@ from util import (
     save,
     load_bags,
 )
-from data import Route, Coordinates, Line, Circle
+from data import Path, Route, Coordinates, Line, Circle
 from constants import MAP_ID, MAP_FILE_PATH, IDS_FILE, PRECALC_BASE_FILE
 import os
 from checker import emulate
@@ -37,18 +38,18 @@ if __name__ == "__main__":
     objective = ObjectiveChecker(penalty).objective
 
     cache_misses = []
+    cache_hits = []
     cache = {}
     with read_json_file(PRECALC_BASE_FILE) as precalc:
         for k, v in precalc.items():
-            k = int(k)
-            v = [Coordinates.from_dict(e) for e in v]
-            cache[sus_map.children[k]] = v
+            cache[Coordinates.from_str(k)] = Path.from_dict(v)
 
     def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
         if f in cache:
-            return cache[f]
+            cache_hits.append(f.to_str())
+            return cache[f].path[1:-1]
         else:
-            cache_misses.append(f'"{f.x} {f.y}"')
+            cache_misses.append(f.to_str())
 
         segmentation = int(f.dist(base) // 2000)
         if segmentation == 0:
@@ -107,8 +108,8 @@ if __name__ == "__main__":
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
-    print("cache misses:")
-    print(cache_misses)
+    print("cache misses: " + json.dumps(cache_misses))
+    print("cache hits: " + json.dumps(cache_hits))
     visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
