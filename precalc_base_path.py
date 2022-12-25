@@ -6,7 +6,7 @@ from simanneal import Annealer
 from constants import PRECALC_BASE_FILE
 from visualizer import visualize_route
 
-# TODO: in use by playground
+# ['"741 104"', '"55 563"', '"1850 954"', '"539 715"', '"1100 3542"', '"1501 1125"', '"5955 977"', '"233 2245"', '"1043 3184"', '"2405 67"', '"5141 2860"', '"2212 1602"', '"3007 3303"', '"318 1833"', '"3970 2086"', '"3450 2538"', '"3340 3614"', '"3297 3473"', '"6264 2788"', '"2834 3160"', '"5579 1388"', '"2602 950"', '"6777 12"', '"83 5255"', '"1298 3041"', '"5012 3734"', '"5549 5831"', '"5568 27"', '"9161 1142"', '"4052 4091"', '"2429 5144"', '"5487 3357"', '"6828 5434"', '"610 6431"', '"2056 8546"', '"7028 1212"', '"7738 1853"', '"4837 5355"', '"4887 7627"', '"6141 3955"', '"8211 3997"', '"2153 3174"', '"3398 5881"', '"106 7720"', '"1308 9380"', '"4189 4335"', '"6403 7937"', '"240 8729"', '"1721 9369"', '"7772 5596"', '"8997 6205"', '"7460 2195"', '"4474 4298"', '"5144 8480"', '"8346 5382"', '"9317 6048"', '"8947 6171"', '"9533 4756"', '"4691 2104"', '"6518 9112"', '"8691 6567"', '"9738 4684"', '"1422 2827"', '"1186 6669"', '"9193 410"', '"8728 4939"', '"1000 9866"', '"9102 6683"', '"7098 9835"', '"7549 8173"', '"5857 9106"', '"1224 6860"', '"3248 6228"', '"7352 8248"', '"4619 9864"', '"6941 2173"', '"8891 9224"', '"9600 77"', '"8965 9653"', '"9060 9891"', '"8516 8498"', '"1003 4361"', '"3490 7751"', '"8381 8634"', '"3241 7138"', '"1403 4153"', '"3593 9895"', '"3536 6893"', '"6312 9952"']
 
 base = Coordinates(0, 0)
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                 path = [base]
                 path.extend(spath)
                 path.append(point)
-        visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
+                visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
     else:
 
         def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
@@ -91,14 +91,15 @@ if __name__ == "__main__":
             def mutate(path):
                 nonlocal f
                 mutant = [0] * len(path)
-                rpath = [Coordinates(0, 0)]
+                rpath = [Coordinates(10, 0)]
                 rpath.extend(retranslate(pos) for pos in path)
-                rpath.append(Coordinates(l, 0))
+                rpath.append(Coordinates(l - 10, 0))
                 for i, p in enumerate(rpath[1:-1]):
-                    x_max = rpath[i + 2].x
-                    x_min = rpath[i].x
-                    p.x = gauss(p.x, 4000)
-                    p.x = max(x_min, min(x_max, p.x))
+                    x_max = rpath[i + 2].x - 1
+                    x_min = rpath[i].x + 1
+                    if x_max > x_min:
+                        p.x = gauss(p.x, 4000)
+                        p.x = max(x_min, min(x_max, p.x))
                     y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
                     y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
                     p.y = gauss(p.y, 4000)
@@ -127,13 +128,13 @@ if __name__ == "__main__":
 
             annealer = PathAnnealer(rand_path())
             annealer.set_schedule(
-                {"tmax": 100.0, "tmin": 1, "steps": 3e3, "updates": 1e3}
+                {"tmax": 1000.0, "tmin": 10, "steps": 3e3, "updates": 1e3}
             )
             print(f.dist(base) + 6 * penalty(base, f))
             best, cost = annealer.anneal()
             if cost > f.dist(base) + 6 * penalty(base, f):
                 return []
-            return [Coordinates(int(c.x), int(c.y)) for c in best]
+            return [Coordinates(int(c.x), int(c.y)) for c in [*set(best)]]
 
         best_path = optimal_path_from_base_to(point)
         with edit_json_file(PRECALC_BASE_FILE) as res:

@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
 
+    cache_misses = []
     cache = {}
     with edit_json_file(PRECALC_BASE_FILE) as precalc:
         for k, v in precalc.items():
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         if f in cache:
             return cache[f]
         else:
-            print("cache miss", f'"{f.x} {f.y}"')
+            cache_misses.append(f'"{f.x} {f.y}"')
         segmentation = int(f.dist(base) // 2000)
         if segmentation == 0:
             return []
@@ -79,14 +80,15 @@ if __name__ == "__main__":
         def mutate(path):
             nonlocal f
             mutant = [0] * len(path)
-            rpath = [Coordinates(0, 0)]
+            rpath = [Coordinates(10, 0)]
             rpath.extend(retranslate(pos) for pos in path)
-            rpath.append(Coordinates(l, 0))
+            rpath.append(Coordinates(l - 10, 0))
             for i, p in enumerate(rpath[1:-1]):
-                x_max = rpath[i + 2].x
-                x_min = rpath[i].x
-                p.x = gauss(p.x, 2000)
-                p.x = max(x_min, min(x_max, p.x))
+                x_max = rpath[i + 2].x - 1
+                x_min = rpath[i].x + 1
+                if x_max > x_min:
+                    p.x = gauss(p.x, 2000)
+                    p.x = max(x_min, min(x_max, p.x))
                 y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
                 y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
                 p.y = gauss(p.y, 2000)
@@ -113,11 +115,11 @@ if __name__ == "__main__":
                 return objective(self.state)
 
         annealer = PathAnnealer(rand_path())
-        annealer.set_schedule({"tmax": 100.0, "tmin": 1, "steps": 50, "updates": 0})
+        annealer.set_schedule({"tmax": 100.0, "tmin": 1, "steps": 320, "updates": 0})
         best, cost = annealer.anneal()
         if cost > f.dist(base) + 6 * penalty(base, f):
             return []
-        return [Coordinates(int(c.x), int(c.y)) for c in best]
+        return [Coordinates(int(c.x), int(c.y)) for c in [*set(best)]]
 
     stack_of_bags = load_bags()
 
@@ -142,21 +144,24 @@ if __name__ == "__main__":
                     nearest_child_pos = child_pos
                     metric = m
             if i == 0:
+                assert curr_pos == base
                 # go to the first child using segmented path
                 moves.extend(optimal_path_from_base_to(nearest_child_pos))
-                curr_pos = nearest_child_pos
-            else:
-                moves.append(nearest_child_pos)
-                curr_pos = nearest_child_pos
+            moves.append(nearest_child_pos)
+            curr_pos = nearest_child_pos
             unvisited.remove(nearest_child_pos)
 
         # go back using segmented path
-        moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
-        curr_pos = base
+        if len(unvisited) != 0:
+            moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
+            moves.append(base)
+            curr_pos = base
 
     sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     print("=== SOLUTION ===")
     print(sus_solution)
+    print("cache misses:")
+    print(cache_misses)
     visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     print(emulate(sus_solution, sus_map))
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
