@@ -1,3 +1,4 @@
+import visualizer
 from data import (
     Route,
     BagDescription,
@@ -109,9 +110,11 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
-    sol: Route = load(Route, "./data/solution_vrp.json")
+    sol: Route = load(Route, "./data/solution_vrp_star.json")
     mp = load_map()
     print(emulate(sol, mp))
+    print(len(sol.moves))
+    visualizer.visualize_route(mp, sol).save("./data/route.png")
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sol)
         print("=== RESPONSE ===")

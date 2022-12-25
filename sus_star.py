@@ -1,55 +1,48 @@
 import json
 import os.path
 
-from astar import find_path
+from astar import AStar
 from tqdm import tqdm
 
-from constants import MAP_ID
 from data import Coordinates, Matrix, Circle, Route
-from util import load_map, load_bags, save, cleanup_jumps_to_start
-from vrp import solve
-
-FILE_PATH = './data/matrix_best.json'
-
-
-def shortest_path(
-        from_pos: int, to_pos: int, times: Matrix, vertices: list[Coordinates],
-        num_children
-) -> tuple[float, list[int]]:
-    def get_neighbors(node: int):
-        return [to_pos] + [n for n in range(num_children + 1, len(vertices)) if n != node]
-
-    def distance(n1: int, n2: int):
-        return times[n1][n2]
-
-    def heuristic(current: int, goal: int):
-        return 0
-
-    path = list(find_path(
-        from_pos,
-        to_pos,
-        get_neighbors,
-        heuristic_cost_estimate_fnct=heuristic,
-        distance_between_fnct=distance
-    ))
-    path_len = sum(times[f][t] for f, t in zip(path[:-1], path[1:]))
-    return path_len, path
+from util import load_map, load_bags, save, cleanup_jumps_to_start, load
+from checker import segment_dist, segment_time, emulate
+from constants import BASE_SPEED
+from itertools import product
 
 
-def expand_moves(m: list[Coordinates], table: dict[str, list[int]],
-                 vertices: list[Coordinates]) -> list[Coordinates]:
-    coords_to_id = {coords: idx for idx, coords in enumerate(vertices)}
+class SusStar(AStar):
+
+    def __init__(self, goal: Coordinates, step=50):
+        self.__goal = goal
+        self.step = step
+
+    def distance_between(self, n1: Coordinates, n2: Coordinates) -> float:
+        d, s, _ = segment_dist(n1, n2, map_data.snow_areas)
+        return segment_time(d, s)
+
+    def neighbors(self, node: Coordinates):
+        return [self.__goal] + [node + Coordinates(*c)
+                                for c in product((-self.step, 0, self.step), repeat=2) if
+                                c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000]
+
+    def heuristic_cost_estimate(self, current: Coordinates, goal: Coordinates) -> float:
+        return current.dist(goal) / BASE_SPEED
+
+
+def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
+    def in_c(s):
+        c = Circle.from_snow(s)
+        return prev_pos.in_circle(c) or next_pos.in_circle(c)
+
     result: list[Coordinates] = []
     prev_pos = m[0]
-    for next_pos in m[1:]:
-        from_idx = coords_to_id[prev_pos]
-        to_idx = coords_to_id[next_pos]
-        if from_idx > to_idx:
-            key = f'{from_idx}-{to_idx}'
-        else:
-            key = f'{to_idx}-{from_idx}'
-
-        result.extend([v[n] for n in table.get(key, [from_idx, to_idx])])
+    for next_pos in tqdm(m[1:]):
+        path = list(SusStar(next_pos,
+                            10 if any(in_c(s)
+                                      for s in map_data.snow_areas) else 100)
+                    .astar(prev_pos, next_pos))
+        result.extend(path)
         prev_pos = next_pos
 
     return result
@@ -57,36 +50,8 @@ def expand_moves(m: list[Coordinates], table: dict[str, list[int]],
 
 if __name__ == '__main__':
     map_data = load_map()
-    v = [Coordinates(0, 0)] + map_data.children + \
-        sum((Circle.from_snow(s).get_outer_points() for s in map_data.snow_areas), [])
-
-    if not os.path.exists(FILE_PATH):
-        with open("./data/matrix.json", "r") as inp:
-            matrix = json.load(inp)
-
-        n_children = len(map_data.children)
-
-        best_times: Matrix = [[0] * (n_children + 1) for _ in range(n_children + 1)]
-        edges_to_paths: dict[str, list[int]] = {}
-        with tqdm(total=(n_children + 1) ** 2 // 2) as pbar:
-            for i in range((n_children + 1)):
-                for j in range((n_children + 1)):
-                    if i > j:
-                        bl, p = shortest_path(i, j, matrix, v, n_children)
-                        best_times[i][j] = best_times[j][i] = bl
-                        edges_to_paths[f'{i}-{j}'] = p
-                        pbar.update()
-
-        with open(FILE_PATH, 'w') as out:
-            json.dump({'matrix': best_times, 'edges': edges_to_paths}, out)
-    else:
-        with open(FILE_PATH, 'r') as inp:
-            saved = json.load(inp)
-
-        best_times = saved['matrix']
-        edges_to_paths = saved['edges']
+    solution: Route = load(Route, "./data/solution_vrp.json")
     bags = load_bags()
-    moves = solve(map_data, bags, best_times)
-    expanded = cleanup_jumps_to_start(expand_moves(moves, edges_to_paths, v))
-    solution = Route(moves=expanded, stack_of_bags=bags, map_id=MAP_ID)
+    solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
+    print(emulate(solution, map_data))
     save(solution, "./data/solution_vrp_star.json")
