@@ -171,10 +171,10 @@ def main():
         ).optimal_path(f)
 
     if args.all_children:
-        improved = 0
-        created = 0
         silent = True
         for _ in range(int(input("Cycles: "))):
+            improved = 0
+            created = 0
             with edit_json_file(PRECALC_BASE_FILE) as precalc:
                 for p in tqdm(sus_map.children):
                     best = optimal_path(p)
