@@ -1,6 +1,7 @@
 from util import (
     get_map,
     edit_json_file,
+    read_json_file,
     send_solution,
     get_solution_info,
     save_map,
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     cache_misses = []
     cache = {}
-    with edit_json_file(PRECALC_BASE_FILE) as precalc:
+    with read_json_file(PRECALC_BASE_FILE) as precalc:
         for k, v in precalc.items():
             k = int(k)
             v = [Coordinates.from_dict(e) for e in v]
@@ -65,6 +66,7 @@ if __name__ == "__main__":
         )
 
     stack_of_bags = load_bags()
+    stack_of_bags.sort(key=len, reverse=True)
 
     moves = []
     base = Coordinates(0, 0)
