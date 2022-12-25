@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclass_wizard import JSONWizard, json_field
-from math import sqrt, cos, sin, pi
+from math import sqrt
 
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -110,6 +110,12 @@ class BagDescription:
         return cls(
             weight=sum(g.weight for g in gifts), volume=sum(g.volume for g in gifts)
         )
+
+
+@dataclass
+class Path:
+    path: list[Coordinates]
+    length: float
 
 
 @dataclass

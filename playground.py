@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
     penalty = PenatyChecker(circles).penalty
-    objective_ch = ObjectiveChecker(penalty)
+    objective = ObjectiveChecker(penalty).objective
 
     cache_misses = []
     cache = {}
@@ -53,12 +53,16 @@ if __name__ == "__main__":
         if segmentation == 0:
             return []
 
-        return OprimalPathFromBaseFinder(
-            segmentation,
-            objective_ch,
-            PathFromBaseMutator(1000, 1000).mutate,
-            schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 0},
-        ).optimal_path(f)
+        return (
+            OprimalPathFromBaseFinder(
+                segmentation,
+                PathFromBaseMutator(1000, 1000).mutate,
+                objective,
+                schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 0},
+            )
+            .optimal_path(f)
+            .path[1:-1]
+        )
 
     stack_of_bags = load_bags()
 

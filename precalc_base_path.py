@@ -1,7 +1,7 @@
 import argparse
 from dataclasses import dataclass
 from random import gauss, uniform
-from data import Circle, Coordinates, Line, Route
+from data import Circle, Coordinates, Line, Path, Route
 from util import edit_json_file, load_map, read_json_file
 from simanneal import Annealer
 from constants import PRECALC_BASE_FILE
@@ -31,6 +31,7 @@ def retranslate(pos: Coordinates, cos_a, sin_a) -> Coordinates:
 
 
 def rand_path_from_base(segmentation, cos_a, sin_a, l):
+    # context aware
     res = [None] * segmentation
     for i in range(segmentation):
         x = l * (i + 1) / (segmentation + 1)
@@ -46,8 +47,10 @@ class PathFromBaseMutator:
     x_var: int
     y_var: int
 
-    def mutate(self, path, cos_a, sin_a, l):
+    def mutate(self, path: list[Coordinates], cos_a, sin_a, l) -> list[Coordinates]:
+        # context aware
         mutant = [0] * len(path)
+        # knowing the constext of [base, *path, f]
         rpath = [Coordinates(10, 0)]
         rpath.extend(retranslate(pos, cos_a, sin_a) for pos in path)
         rpath.append(Coordinates(l - 10, 0))
@@ -70,6 +73,7 @@ class PenatyChecker:
     circles: list[Circle]
 
     def penalty(self, f: Coordinates, t: Coordinates) -> float:
+        # context unaware
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in self.circles)
 
@@ -78,34 +82,34 @@ class PenatyChecker:
 class ObjectiveChecker:
     penalty: callable
 
-    def objective(self, start, path, stop):
+    def objective(self, path: list[Coordinates]):
+        # context unaware
         res = 0
-        prev = start
-        for pos in path:
+        prev = path[0]
+        for pos in path[1:]:
             res += prev.dist(pos) + 6 * self.penalty(pos, prev)
             prev = pos
-        res += prev.dist(stop) + 6 * self.penalty(stop, prev)
         return res
 
 
 class OprimalPathFromBaseFinder:
     segmentation: int
-    objective_checker: ObjectiveChecker
-    mutate: callable
-    rand_path_from_base: callable
+    mutate: callable  # context aware
+    objective: callable  # context unaware
+    rand_path_from_base: callable  # context aware
     schedule: dict = {"tmax": 100.0, "tmin": 1, "steps": 340, "updates": 100}
 
     def __init__(
         self,
         segmentation,
-        objectivec,
         mutate,
+        objective,
         rand_path_from_base_generator=None,
         schedule=None,
     ):
         self.segmentation = segmentation
-        self.objective_checker = objectivec
         self.mutate = mutate
+        self.objective = objective
         if rand_path_from_base_generator is None:
             self.rand_path_from_base = rand_path_from_base
         else:
@@ -113,31 +117,34 @@ class OprimalPathFromBaseFinder:
         if schedule is not None:
             self.schedule = schedule
 
-    def optimal_path(self, f: Coordinates) -> list[Coordinates]:
+    def optimal_path(self, f: Coordinates) -> Path:
         l = f.dist(base)
         cos_a = f.x / l
         sin_a = f.y / l
 
         mutate = self.mutate
-        objective = self.objective_checker.objective
-        penalty = self.objective_checker.penalty
+        objective = self.objective
 
         class PathAnnealer(Annealer):
             def move(self):
-                self.state = mutate(self.state, cos_a, sin_a, l)
+                path = [base] + mutate(self.state.path[1:-1], cos_a, sin_a, l) + [f]
+                length = objective(path)
+                self.state = Path(path, length)
 
             def energy(self):
-                nonlocal f
-                return objective(base, self.state, f)
+                return self.state.length
 
-        annealer = PathAnnealer(
-            self.rand_path_from_base(self.segmentation, cos_a, sin_a, l)
+        init = (
+            [base] + self.rand_path_from_base(self.segmentation, cos_a, sin_a, l) + [f]
         )
+        annealer = PathAnnealer(Path(init, objective(init)))
         annealer.set_schedule(self.schedule)
         best, cost = annealer.anneal()
-        if cost > l + 6 * penalty(base, f):
-            return []
-        return [Coordinates(int(c.x), int(c.y)) for c in best]
+        linear = Path([base, f], objective([base, f]))
+        if cost > linear.length:
+            return linear
+        # NOTE: assuming int rounding does not change path len significantly
+        return Path([Coordinates(int(c.x), int(c.y)) for c in best.path], cost)
 
 
 def point_data(s: str) -> Coordinates:
@@ -165,26 +172,25 @@ def main():
 
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
     penalty = PenatyChecker(circles).penalty
-    objective_ch = ObjectiveChecker(penalty)
-    objective = objective_ch.objective
+    objective = ObjectiveChecker(penalty).objective
 
     if args.visualize:
         with read_json_file(PRECALC_BASE_FILE) as res:
             if str(args.index) not in res:
                 print("No such index")
             else:
-                path = [Coordinates.from_dict(e) for e in res[str(args.index)]]
+                path = (
+                    [base]
+                    + [Coordinates.from_dict(e) for e in res[str(args.index)]]
+                    + [point]
+                )
                 print(
                     "objective:",
-                    objective(base, path, point),
+                    objective(path),
                 )
-                print("path:", path)
+                print("path:", path[1:-1])
                 print("draw? (y/n): ")
                 if input() == "y":
-                    spath = path
-                    path = [base]
-                    path.extend(spath)
-                    path.append(point)
                     visualize_route(sus_map, Route(path, None, None)).save(
                         "data/path.png"
                     )
@@ -196,29 +202,28 @@ def main():
                 print("no previous results")
             else:
                 path = [Coordinates.from_dict(e) for e in res[str(args.index)]]
-                print("best: ", objective(base, path, point))
-        optimal_path_from_base_to = OprimalPathFromBaseFinder(
+                print("best: ", objective([base] + path + [point]))
+
+        best_path = OprimalPathFromBaseFinder(
             segmentation,
-            objective_ch,
             PathFromBaseMutator(4000, 4000).mutate,
+            objective,
             schedule={"tmax": 1000, "tmin": 1, "steps": 3e3, "updates": 1e3},
-        ).optimal_path
-        best_path = optimal_path_from_base_to(point)
+        ).optimal_path(point)
 
         with edit_json_file(PRECALC_BASE_FILE) as res:
             if str(args.index) not in res:
                 res[str(args.index)] = []
             old = [Coordinates.from_dict(e) for e in res[str(args.index)]]
-            if objective(base, old, point) > objective(base, best_path, point):
-                res[str(args.index)] = [e.to_dict() for e in best_path]
+            if objective([base] + old + [point]) > best_path.length:
+                res[str(args.index)] = [e.to_dict() for e in best_path.path[1:-1]]
                 print("update")
 
         print("draw? (y/n): ")
         if input() == "y":
-            path = [base]
-            path.extend(best_path)
-            path.append(point)
-            visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
+            visualize_route(sus_map, Route(best_path.path, None, None)).save(
+                "data/path.png"
+            )
 
 
 if __name__ == "__main__":

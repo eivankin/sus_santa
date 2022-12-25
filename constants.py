@@ -13,7 +13,7 @@ MAP_URL = BASE_URL + f"/json/map/{MAP_ID}.json"
 AUTH_HEADER = {"X-API-Key": API_KEY}
 
 MAP_FILE_PATH = "./data/map.json"
-TIMES_MATRIX_PATH = "./data/matrix.json"
+TIMES_MATRIX_PATH = "./data/matrix_old.json"
 
 IDS_FILE = ".round_ids.json"
 
