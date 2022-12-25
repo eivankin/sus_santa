@@ -2,7 +2,7 @@ import argparse
 from dataclasses import dataclass
 from random import gauss, uniform
 from data import Circle, Coordinates, Line, Map, Route
-from util import edit_json_file, load_map
+from util import edit_json_file, load_map, read_json_file
 from simanneal import Annealer
 from constants import PRECALC_BASE_FILE
 from visualizer import visualize_route
@@ -90,12 +90,24 @@ class OprimalPathFromBaseFinder:
     segmentation: int
     objective_checker: ObjectiveChecker
     mutate: callable
+    rand_path_from_base: callable
     schedule: dict = {"tmax": 100.0, "tmin": 1, "steps": 340, "updates": 100}
 
-    def __init__(self, segmentation, objectivec, mutate, schedule=None):
+    def __init__(
+        self,
+        segmentation,
+        objectivec,
+        mutate,
+        rand_path_from_base_generator=None,
+        schedule=None,
+    ):
         self.segmentation = segmentation
         self.objective_checker = objectivec
         self.mutate = mutate
+        if rand_path_from_base_generator is None:
+            self.rand_path_from_base = rand_path_from_base
+        else:
+            self.rand_path_from_base = rand_path_from_base_generator
         if schedule is not None:
             self.schedule = schedule
 
@@ -116,7 +128,9 @@ class OprimalPathFromBaseFinder:
                 nonlocal f
                 return objective(base, self.state, f)
 
-        annealer = PathAnnealer(rand_path_from_base(self.segmentation, cos_a, sin_a, l))
+        annealer = PathAnnealer(
+            self.rand_path_from_base(self.segmentation, cos_a, sin_a, l)
+        )
         annealer.set_schedule(self.schedule)
         best, cost = annealer.anneal()
         if cost > l + 6 * penalty(base, f):
@@ -152,7 +166,7 @@ def main():
     objective = objective_ch.objective
 
     if args.visualize:
-        with edit_json_file(PRECALC_BASE_FILE) as res:
+        with read_json_file(PRECALC_BASE_FILE) as res:
             if str(args.index) not in res:
                 print("No such index")
             else:
@@ -168,15 +182,23 @@ def main():
                     path = [base]
                     path.extend(spath)
                     path.append(point)
-                    visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
+                    visualize_route(sus_map, Route(path, None, None)).save(
+                        "data/path.png"
+                    )
     else:
         segmentation = 2
         print("linear: ", base.dist(point) + 6 * penalty(base, point))
+        with read_json_file(PRECALC_BASE_FILE) as res:
+            if str(args.index) not in res:
+                print("no previous results")
+            else:
+                path = [Coordinates.from_dict(e) for e in res[str(args.index)]]
+                print("best: ", objective(base, path, point))
         optimal_path_from_base_to = OprimalPathFromBaseFinder(
             segmentation,
             objective_ch,
             PathFromBaseMutator(4000, 4000).mutate,
-            {"tmax": 1000, "tmin": 1, "steps": 3e3, "updates": 1e3},
+            schedule={"tmax": 1000, "tmin": 1, "steps": 3e3, "updates": 1e3},
         ).optimal_path
         best_path = optimal_path_from_base_to(point)
 

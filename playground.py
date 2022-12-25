@@ -58,7 +58,7 @@ if __name__ == "__main__":
             segmentation,
             objective_ch,
             PathFromBaseMutator(1000, 1000).mutate,
-            {"tmax": 100, "tmin": 1, "steps": 500, "updates": 0},
+            schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 0},
         ).optimal_path(f)
 
     stack_of_bags = load_bags()
