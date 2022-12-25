@@ -143,6 +143,7 @@ def main():
     parser.add_argument("-p", "--point", type=Coordinates.from_str)
     parser.add_argument("-i", "--index", type=int)
     parser.add_argument("-b", "--bunch", action="store_true")
+    parser.add_argument("-a", "--all_children", action="store_true")
     parser.add_argument("-v", "--visualize", action="store_true")
     args = parser.parse_args()
 
@@ -152,6 +153,8 @@ def main():
     penalty = PenatyChecker(circles).penalty
     objective = ObjectiveChecker(penalty).objective
 
+    silent = False
+
     def optimal_path(f: Coordinates) -> Path:
         segmentation = int(f.dist(base) // 2000)
         return OprimalPathFromBaseFinder(
@@ -159,15 +162,51 @@ def main():
             PathFromBaseMutator(2000, 2000).mutate,
             # WidePathMutator(1, 3000, 3000).mutate,
             objective,
-            schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 500},
+            schedule={
+                "tmax": 100,
+                "tmin": 1,
+                "steps": 500,
+                "updates": 500 if not silent else 0,
+            },
         ).optimal_path(f)
 
+    if args.all_children:
+        improved = 0
+        created = 0
+        silent = True
+        with edit_json_file(PRECALC_BASE_FILE) as precalc:
+            for p in tqdm(sus_map.children):
+                best = optimal_path(p)
+                p = p.to_str()
+                if p not in precalc or Path.from_dict(precalc[p]).length > best.length:
+                    if p in precalc:
+                        improved += 1
+                    else:
+                        created += 1
+                    precalc[p] = best.to_dict()
+        print(
+            f"improved: {improved}/{len(sus_map.children)}, created: {created}/{len(sus_map.children)}"
+        )
+        return
+
     if args.bunch:
+        improved = 0
+        created = 0
+        silent = True
         print("enter points: ")
         points = json.loads(input())
         with edit_json_file(PRECALC_BASE_FILE) as precalc:
             for p in tqdm(points):
-                precalc[p] = optimal_path(Coordinates.from_str(p)).to_dict()
+                best = optimal_path(Coordinates.from_str(p))
+                if p not in precalc or Path.from_dict(precalc[p]).length > best.length:
+                    if p in precalc:
+                        improved += 1
+                    else:
+                        created += 1
+                    precalc[p] = best.to_dict()
+        print(
+            f"improved: {improved}/{len(points)}, created: {created}/{len(points)}"
+        )
         return
 
     if args.point is None:
@@ -200,12 +239,9 @@ def main():
         best_path = optimal_path(args.point)
 
         with edit_json_file(PRECALC_BASE_FILE) as res:
-            if k not in res:
-                res[k] = Path([], 1e100).to_dict()
             old = Path.from_dict(res[k])
-            if old.length > best_path.length:
+            if k not in res or old.length > best_path.length:
                 res[k] = best_path.to_dict()
-                print("update")
 
         print()
         if input("draw? (y/n): ") == "y":
