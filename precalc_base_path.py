@@ -1,4 +1,5 @@
 import argparse
+from dataclasses import dataclass
 from random import gauss, uniform
 from data import Circle, Coordinates, Line, Map, Route
 from util import edit_json_file, load_map
@@ -11,27 +12,123 @@ from visualizer import visualize_route
 base = Coordinates(0, 0)
 
 
-def penalty(f: Coordinates, t: Coordinates) -> float:
-    l = Line.from_two_points(f, t)
-    return sum(l.distance_in_circle(s) for s in circles)
+def translate(pos: Coordinates, cos_a, sin_a) -> Coordinates:
+    # represent back from the rotated coordinate system
+    return Coordinates(
+        pos.x * cos_a - pos.y * sin_a,
+        pos.x * sin_a + pos.y * cos_a,
+    )
 
 
-def objective(path, f):
-    global base
-    res = 0
-    prev = f
-    for pos in path:
-        res += prev.dist(pos) + 6 * penalty(pos, prev)
-        prev = pos
-    res += prev.dist(base) + 6 * penalty(base, prev)
+def retranslate(pos: Coordinates, cos_a, sin_a) -> Coordinates:
+    # represent in the rotated coordinate system
+    return Coordinates(
+        pos.x * cos_a + pos.y * sin_a,
+        pos.y * cos_a - pos.x * sin_a,
+    )
+
+
+def rand_path_from_base(segmentation, cos_a, sin_a, l):
+    res = [None] * segmentation
+    for i in range(segmentation):
+        x = l * (i + 1) / (segmentation + 1)
+        y_max = min(x * cos_a / sin_a, (10000 - x * sin_a) / cos_a)
+        y_min = max(-x * sin_a / cos_a, (-10000 + x * cos_a) / sin_a)
+        y = uniform(y_min, y_max)
+        res[i] = translate(Coordinates(x, y), cos_a, sin_a)
     return res
+
+
+@dataclass
+class PathFromBaseMutator:
+    x_var: int
+    y_var: int
+
+    def mutate(self, path, cos_a, sin_a, l):
+        mutant = [0] * len(path)
+        rpath = [Coordinates(10, 0)]
+        rpath.extend(retranslate(pos, cos_a, sin_a) for pos in path)
+        rpath.append(Coordinates(l - 10, 0))
+        for i, p in enumerate(rpath[1:-1]):
+            x_max = rpath[i + 2].x - 1
+            x_min = rpath[i].x + 1
+            if x_max > x_min:
+                p.x = gauss(p.x, self.x_var)
+                p.x = max(x_min, min(x_max, p.x))
+            y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
+            y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
+            p.y = gauss(p.y, self.y_var)
+            p.y = max(y_min, min(y_max, p.y))
+            mutant[i] = translate(p, cos_a, sin_a)
+        return mutant
+
+
+@dataclass
+class PenatyChecker:
+    circles: list[Circle]
+
+    def penalty(self, f: Coordinates, t: Coordinates) -> float:
+        l = Line.from_two_points(f, t)
+        return sum(l.distance_in_circle(s) for s in self.circles)
+
+
+@dataclass
+class ObjectiveChecker:
+    penalty: callable
+
+    def objective(self, start, path, stop):
+        res = 0
+        prev = start
+        for pos in path:
+            res += prev.dist(pos) + 6 * self.penalty(pos, prev)
+            prev = pos
+        res += prev.dist(stop) + 6 * self.penalty(stop, prev)
+        return res
+
+
+class OprimalPathFromBaseFinder:
+    segmentation: int
+    objective_checker: ObjectiveChecker
+    mutate: callable
+    schedule: dict = {"tmax": 100.0, "tmin": 1, "steps": 340, "updates": 100}
+
+    def __init__(self, segmentation, objectivec, mutate, schedule=None):
+        self.segmentation = segmentation
+        self.objective_checker = objectivec
+        self.mutate = mutate
+        if schedule is not None:
+            self.schedule = schedule
+
+    def optimal_path(self, f: Coordinates) -> list[Coordinates]:
+        l = f.dist(base)
+        cos_a = f.x / l
+        sin_a = f.y / l
+
+        mutate = self.mutate
+        objective = self.objective_checker.objective
+        penalty = self.objective_checker.penalty
+
+        class PathAnnealer(Annealer):
+            def move(self):
+                self.state = mutate(self.state, cos_a, sin_a, l)
+
+            def energy(self):
+                nonlocal f
+                return objective(base, self.state, f)
+
+        annealer = PathAnnealer(rand_path_from_base(self.segmentation, cos_a, sin_a, l))
+        annealer.set_schedule(self.schedule)
+        best, cost = annealer.anneal()
+        if cost > l + 6 * penalty(base, f):
+            return []
+        return [Coordinates(int(c.x), int(c.y)) for c in best]
 
 
 def point_data(s: str) -> Coordinates:
     return Coordinates(*map(float, s.split(" ")))
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("index", type=int)
     parser.add_argument("-p", "--point", type=point_data)
@@ -50,6 +147,9 @@ if __name__ == "__main__":
         point = sus_map.children[args.index]
 
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
+    penalty = PenatyChecker(circles).penalty
+    objective_ch = ObjectiveChecker(penalty)
+    objective = objective_ch.objective
 
     if args.visualize:
         with edit_json_file(PRECALC_BASE_FILE) as res:
@@ -59,87 +159,42 @@ if __name__ == "__main__":
                 path = [Coordinates.from_dict(e) for e in res[str(args.index)]]
                 print(
                     "objective:",
-                    objective(path, point),
+                    objective(base, path, point),
                 )
                 print("path:", path)
-                spath = path
-                path = [base]
-                path.extend(spath)
-                path.append(point)
-                visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
+                print("draw? (y/n): ")
+                if input() == "y":
+                    spath = path
+                    path = [base]
+                    path.extend(spath)
+                    path.append(point)
+                    visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
     else:
-
-        def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
-            segmentation = 2
-
-            l = f.dist(base)
-            cos_a = f.x / l
-            sin_a = f.y / l
-
-            def translate(pos: Coordinates) -> Coordinates:
-                return Coordinates(
-                    pos.x * cos_a - pos.y * sin_a,
-                    pos.x * sin_a + pos.y * cos_a,
-                )
-
-            def retranslate(pos: Coordinates) -> Coordinates:
-                return Coordinates(
-                    pos.x * cos_a + pos.y * sin_a,
-                    pos.y * cos_a - pos.x * sin_a,
-                )
-
-            def mutate(path):
-                nonlocal f
-                mutant = [0] * len(path)
-                rpath = [Coordinates(10, 0)]
-                rpath.extend(retranslate(pos) for pos in path)
-                rpath.append(Coordinates(l - 10, 0))
-                for i, p in enumerate(rpath[1:-1]):
-                    x_max = rpath[i + 2].x - 1
-                    x_min = rpath[i].x + 1
-                    if x_max > x_min:
-                        p.x = gauss(p.x, 4000)
-                        p.x = max(x_min, min(x_max, p.x))
-                    y_max = min(p.x * cos_a / sin_a, (10000 - p.x * sin_a) / cos_a)
-                    y_min = max(-p.x * sin_a / cos_a, (-10000 + p.x * cos_a) / sin_a)
-                    p.y = gauss(p.y, 4000)
-                    p.y = max(y_min, min(y_max, p.y))
-                    mutant[i] = translate(p)
-                return mutant
-
-            def rand_path():
-                nonlocal f
-                res = [None] * segmentation
-                for i in range(segmentation):
-                    x = l * (i + 1) / (segmentation + 1)
-                    y_max = min(x * cos_a / sin_a, (10000 - x * sin_a) / cos_a)
-                    y_min = max(-x * sin_a / cos_a, (-10000 + x * cos_a) / sin_a)
-                    y = uniform(y_min, y_max)
-                    res[i] = translate(Coordinates(x, y))
-                return res
-
-            class PathAnnealer(Annealer):
-                def move(self):
-                    self.state = mutate(self.state)
-
-                def energy(self):
-                    nonlocal f
-                    return objective(self.state, f)
-
-            annealer = PathAnnealer(rand_path())
-            annealer.set_schedule(
-                {"tmax": 1000.0, "tmin": 10, "steps": 3e3, "updates": 1e3}
-            )
-            print(f.dist(base) + 6 * penalty(base, f))
-            best, cost = annealer.anneal()
-            if cost > f.dist(base) + 6 * penalty(base, f):
-                return []
-            return [Coordinates(int(c.x), int(c.y)) for c in [*set(best)]]
-
+        segmentation = 2
+        print("linear: ", base.dist(point) + 6 * penalty(base, point))
+        optimal_path_from_base_to = OprimalPathFromBaseFinder(
+            segmentation,
+            objective_ch,
+            PathFromBaseMutator(4000, 4000).mutate,
+            {"tmax": 1000, "tmin": 1, "steps": 3e3, "updates": 1e3},
+        ).optimal_path
         best_path = optimal_path_from_base_to(point)
+
         with edit_json_file(PRECALC_BASE_FILE) as res:
             if str(args.index) not in res:
                 res[str(args.index)] = []
             old = [Coordinates.from_dict(e) for e in res[str(args.index)]]
-            if objective(old, point) > objective(best_path, point):
+            if objective(base, old, point) > objective(base, best_path, point):
                 res[str(args.index)] = [e.to_dict() for e in best_path]
+                print("update")
+
+        print("draw? (y/n): ")
+        if input() == "y":
+            path = [base]
+            path.extend(best_path)
+            path.append(point)
+            visualize_route(sus_map, Route(path, None, None)).save("data/path.png")
+
+
+if __name__ == "__main__":
+    main()

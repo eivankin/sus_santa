@@ -20,15 +20,15 @@ if __name__ == "__main__":
         l = Line.from_two_points(f, t)
         return sum(l.distance_in_circle(s) for s in circles)
 
-    def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
-        segmentation = int(f.dist(base) // 2000)
+    def optimal_path(f: Coordinates, t: Coordinates) -> list[Coordinates]:
+        segmentation = int(f.dist(t) // 2000)
         print(segmentation)
         if segmentation == 0:
             return []
 
-        l = f.dist(base)
-        cos_a = f.x / l
-        sin_a = f.y / l
+        l = f.dist(t)
+        cos_a = (t.x - f.x) / l
+        sin_a = (t.y - f.y) / l
 
         def translate(pos: Coordinates) -> Coordinates:
             return Coordinates(
@@ -98,10 +98,10 @@ if __name__ == "__main__":
         return [Coordinates(int(c.x), int(c.y)) for c in best]
 
     end = Coordinates(8000, 9600)
-    base = Coordinates(0, 0)
-    path = [base]
-    path.extend(optimal_path_from_base_to(end))
+    start = Coordinates(0, 0)
+    path = [start]
+    path.extend(optimal_path(start, end))
     path.append(end)
 
     r = Route(path, None, None)
-    # visualize_route(sus_map, r).save("data/route.png")
+    visualize_route(sus_map, r).save("data/path.png")
