@@ -23,9 +23,8 @@ from precalc_base_path import (
 
 import warnings
 
-warnings.filterwarnings("ignore")
-
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
     if not os.path.exists(MAP_FILE_PATH):
         sus_map = get_map()
         save_map(sus_map)
