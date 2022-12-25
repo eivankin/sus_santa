@@ -181,7 +181,7 @@ class Line:
         big_d = x1 * y2 - x2 * y1
         discriminant = r ** 2 * dr ** 2 - big_d ** 2
 
-        if discriminant < 0:
+        if discriminant <= 0:
             return 0
 
         intersections = [
