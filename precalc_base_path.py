@@ -93,6 +93,11 @@ class ObjectiveChecker:
     penalty: callable
 
     def objective(self, path: list[Coordinates]):
+        # TODO: optimize:
+        # write is_len_smaller(path, len) instead
+        # that returns the actual len of the path only in case when it is smaller,
+        # so it can throw summation of path pieces if it finds that the sum is already bigger that the threshold
+
         # context unaware
         res = 0
         prev = path[0]
