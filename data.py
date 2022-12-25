@@ -6,6 +6,7 @@ from shapely.geometry import LineString
 from shapely.geometry import Point
 
 Bag = list[int]
+Matrix = list[list[float]]
 
 
 @dataclass

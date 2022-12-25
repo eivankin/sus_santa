@@ -8,16 +8,14 @@ import json
 import os
 from math import sqrt, ceil
 
-from data import Map, Bag, Coordinates, SnowArea, Route, Circle
+from data import Map, Bag, Coordinates, SnowArea, Route, Circle, Matrix
 from util import load_map, load_bags, save, cleanup_jumps_to_start
 from checker import segment_dist, segment_time
 from constants import TIMES_MATRIX_PATH, MAP_ID
 
-Matrix = list[list[float]]
-
 
 def make_distance_matrix(
-    vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
+        vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
 ) -> Matrix:
     num_vertices = len(vertices)
     result: Matrix = [[0] * num_vertices for _ in range(num_vertices)]
@@ -41,19 +39,15 @@ def make_distance_matrix(
     return result
 
 
-def get_outer_points(circle: Circle) -> list[Coordinates]:
-    delta = ceil(sqrt(2 * circle.radius**2))
-    ds = [(0, delta), (delta, 0), (-delta, 0), (0, -delta)]
-    return [Coordinates(circle.center.x + dx, circle.center.y + dy) for (dx, dy) in ds]
-
-
 def create_data_model(
-    vertices: list[Coordinates], snow_areas: list[SnowArea], stack_of_bags: list[Bag]
+        vertices: list[Coordinates], snow_areas: list[SnowArea], stack_of_bags: list[Bag],
+        distance_matrix: Matrix | None
 ) -> dict:
     """Stores the data for the problem."""
     data = {}
+    matrix = distance_matrix if distance_matrix else make_distance_matrix(vertices, snow_areas)
     data["distance_matrix"] = [
-        [round(e) for e in row] for row in make_distance_matrix(vertices, snow_areas)
+        [round(e) for e in row] for row in matrix
     ]
     data["demands"] = [0] + [1] * (len(vertices) - 1)
     data["vehicle_capacities"] = [len(bag) for bag in stack_of_bags[::-1]]
@@ -63,7 +57,7 @@ def create_data_model(
 
 
 def print_solution(
-    vertices: list[Coordinates], data, manager, routing, assignment
+        vertices: list[Coordinates], data, manager, routing, assignment
 ) -> list[Coordinates]:
     """Prints assignment on console."""
     moves = []
@@ -108,11 +102,11 @@ def print_solution(
     return moves
 
 
-def solve(map_data: Map, stack_of_bags: list[Bag]):
+def solve(map_data: Map, stack_of_bags: list[Bag], distance_matrix: Matrix | None = None):
     """Solve the CVRP problem."""
     # Instantiate the data problem.
     vertices: list[Coordinates] = [Coordinates(0, 0)] + map_data.children
-    data = create_data_model(vertices, map_data.snow_areas, stack_of_bags)
+    data = create_data_model(vertices, map_data.snow_areas, stack_of_bags, distance_matrix)
 
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(
