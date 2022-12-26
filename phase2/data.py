@@ -9,12 +9,18 @@ class Gift(JSONWizard):
     type: str
     price: int
 
+    def compact(self):
+        return f"Gift(id:{self.id:4}, {self.type:15}, price:{self.price})"
+
 
 @dataclass
 class Child(JSONWizard):
     id: int
     gender: str
     age: int
+
+    def compact(self):
+        return f"Child(id:{self.id:4}, {self.gender:6}, age:{self.age:2})"
 
 
 @dataclass

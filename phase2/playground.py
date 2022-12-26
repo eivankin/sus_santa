@@ -1,7 +1,7 @@
 import os
 import warnings
 
-from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE
+from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
 from data import Order, Present
 from util import (
     get_map, save_map, load_map,
@@ -30,7 +30,7 @@ if __name__ == "__main__":
             print(get_solution_info(sus_response.round_id))
             with edit_json_file(IDS_FILE) as solution:
                 solution[sus_response.round_id] = input("label: ")
-            save(sus_solution, f"./data/solutions/{sus_response.round_id}.json")
+            save(sus_solution, SOLUTIONS_PATH + f"{sus_response.round_id}.json")
         else:
             print("Unsuccessful")
             save(sus_solution, "./data/solution_unsuccessful.json")
