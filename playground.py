@@ -119,7 +119,7 @@ if __name__ == "__main__":
     # print("cache misses: " + json.dumps(cache_misses))
     # print("cache hits: " + json.dumps(cache_hits))
     print(emulate(sus_solution, sus_map))
-    if input("visualize? (y/n)").lower() in ("y", "yes"):
+    if input("visualize? (y/n): ").lower() in ("y", "yes"):
         visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)
