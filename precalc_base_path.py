@@ -165,14 +165,15 @@ def main():
             schedule={
                 "tmax": 100,
                 "tmin": 1,
-                "steps": 1000,
+                "steps": 500,
                 "updates": 500 if not silent else 0,
             },
         ).optimal_path(f)
 
     if args.all_children:
         silent = True
-        for _ in range(int(input("Cycles: "))):
+        for i in range(int(input("Cycles: "))):
+            print(f"cycle {i}")
             improved = 0
             created = 0
             with edit_json_file(PRECALC_BASE_FILE) as precalc:
