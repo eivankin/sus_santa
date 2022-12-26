@@ -40,18 +40,18 @@ if __name__ == "__main__":
     cache_misses = []
     cache_hits = []
     cache = {}
-    # with read_json_file(PRECALC_BASE_FILE) as precalc:
-    #     for k, v in precalc.items():
-    #         cache[Coordinates.from_str(k)] = Path.from_dict(v)
+    with read_json_file(PRECALC_BASE_FILE) as precalc:
+        for k, v in precalc.items():
+            cache[Coordinates.from_str(k)] = Path.from_dict(v)
 
-    def optimal_path(start: Coordinates, f: Coordinates) -> list[Coordinates]:
+    def optimal_path_from_base_to(f: Coordinates) -> list[Coordinates]:
         if f in cache:
             cache_hits.append(f.to_str())
             return cache[f].path[1:-1]
         else:
             cache_misses.append(f.to_str())
 
-        segmentation = max(int(f.dist(start) / 2_000), 5)
+        segmentation = int(f.dist(base) // 2000)
         if segmentation == 0:
             return []
 
@@ -60,9 +60,9 @@ if __name__ == "__main__":
                 segmentation,
                 PathFromBaseMutator(1000, 1000).mutate,
                 objective,
-                schedule={"tmax": 100, "tmin": 1, "steps": 1_000, "updates": 0},
+                schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 0},
             )
-            .optimal_path(start, f)
+            .optimal_path(f)
             .path[1:-1]
         )
 
@@ -91,17 +91,17 @@ if __name__ == "__main__":
                 if nearest_child_pos is None or m < metric:
                     nearest_child_pos = child_pos
                     metric = m
-            # if i == 0:
-            #     assert curr_pos == base
-            #     # go to the first child using segmented path
-            moves.extend(optimal_path(curr_pos, nearest_child_pos))
+            if i == 0:
+                assert curr_pos == base
+                # go to the first child using segmented path
+                moves.extend(optimal_path_from_base_to(nearest_child_pos))
             moves.append(nearest_child_pos)
             curr_pos = nearest_child_pos
             unvisited.remove(nearest_child_pos)
 
         # go back using segmented path
         if len(unvisited) != 0:
-            moves.extend(reversed(optimal_path(base, curr_pos)))
+            moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
             moves.append(base)
             curr_pos = base
 
