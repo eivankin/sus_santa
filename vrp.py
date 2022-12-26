@@ -216,7 +216,6 @@ def solve(
 if __name__ == "__main__":
     sus_map = load_map()
     bags = load_bags()
-    bags.sort(key=len, reverse=True)
     moves = solve(sus_map, bags, tl=int(input("Time limit: ")))
     if moves:
         solution = Route(moves=moves, stack_of_bags=bags, map_id=MAP_ID)
