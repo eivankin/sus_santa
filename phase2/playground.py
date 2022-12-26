@@ -4,12 +4,17 @@ import warnings
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
 from phase2.data import Order, Present
 from util import (
-    get_map, save_map, load_map,
-    info_about_map, send_solution,
-    get_solution_info, edit_json_file,
-    save
+    get_map,
+    save_map,
+    load_map,
+    info_about_map,
+    send_solution,
+    get_solution_info,
+    edit_json_file,
+    save,
 )
 from greedy import most_expensive
+from checker import validate
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
@@ -22,9 +27,10 @@ if __name__ == "__main__":
     info_about_map(sus_map)
 
     # presents = [Present(i, i) for i in range(1, 1001)]
-    presents = most_expensive(sus_map, True)
+    presents = most_expensive(sus_map)
     # presents[0].gift_id = 2000
     sus_solution = Order(MAP_ID, presents)
+    validate(sus_solution, sus_map)
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)

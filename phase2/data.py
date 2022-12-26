@@ -16,7 +16,7 @@ class Gift(JSONWizard):
     def as_tuple(self) -> tuple[int, str, int]:
         return self.id, self.type, self.price
 
-    def __eq__(self, other: 'Gift'):
+    def __eq__(self, other: "Gift"):
         return self.as_tuple() == other.as_tuple()
 
     def __hash__(self):
@@ -41,6 +41,7 @@ class Map(JSONWizard):
 
 # Order classes
 
+
 @dataclass
 class Present(JSONWizard):
     gift_id: int = json_field("giftID", all=True)
@@ -62,6 +63,7 @@ class OrderResponse(JSONWizard):
 
 # Status classes
 
+
 @dataclass
 class RoundInfoData(JSONWizard):
     error_message: str = json_field("error_message")
@@ -77,21 +79,21 @@ class RoundInfo(JSONWizard):
 
 
 class Category(Enum):
-    CONSTRUCTORS = 'constructors'
-    DOLLS = 'dolls'
-    RADIO_CONTROLLED_TOYS = 'radio_controlled_toys'
-    TOY_VEHICLES = 'toy_vehicles'
-    BOARD_GAMES = 'board_games'
-    OUTDOOR_GAMES = 'outdoor_games'
-    PLAYGROUND = 'playground'
-    SOFT_TOYS = 'soft_toys'
-    COMPUTER_GAMES = 'computer_games'
-    SWEETS = 'sweets'
-    BOOKS = 'books'
-    PET = 'pet'
-    CLOTHES = 'clothes'
+    CONSTRUCTORS = "constructors"
+    DOLLS = "dolls"
+    RADIO_CONTROLLED_TOYS = "radio_controlled_toys"
+    TOY_VEHICLES = "toy_vehicles"
+    BOARD_GAMES = "board_games"
+    OUTDOOR_GAMES = "outdoor_games"
+    PLAYGROUND = "playground"
+    SOFT_TOYS = "soft_toys"
+    COMPUTER_GAMES = "computer_games"
+    SWEETS = "sweets"
+    BOOKS = "books"
+    PET = "pet"
+    CLOTHES = "clothes"
 
 
 class Gender(Enum):
-    MALE = 'male'
-    FEMALE = 'female'
+    MALE = "male"
+    FEMALE = "female"
