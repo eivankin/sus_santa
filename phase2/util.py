@@ -3,8 +3,14 @@ from collections import defaultdict
 
 from requests import post, get
 
-from constants import SUBMISSION_URL, AUTH_HEADER, MAP_URL, MAP_FILE_PATH, INFO_URL_TEMPLATE
-from data import Order, OrderResponse, Map, RoundInfo
+from constants import (
+    SUBMISSION_URL,
+    AUTH_HEADER,
+    MAP_URL,
+    MAP_FILE_PATH,
+    INFO_URL_TEMPLATE,
+)
+from phase2.data import Order, OrderResponse, Map, RoundInfo
 
 
 class edit_json_file:
@@ -99,6 +105,7 @@ def info_about_map(m: Map) -> None:
     print(f"Number of gifts: {len(m.gifts)}")
     prices = {g.price for g in m.gifts}
     print("Min and max price of gifts: ", min(prices), max(prices))
+    print("Avg price: ", sum(prices) / len(prices))
     types = {g.type for g in m.gifts}
     print(f"Types: {types}")
 
