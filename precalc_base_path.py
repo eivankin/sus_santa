@@ -165,28 +165,32 @@ def main():
             schedule={
                 "tmax": 100,
                 "tmin": 1,
-                "steps": 500,
+                "steps": 1000,
                 "updates": 500 if not silent else 0,
             },
         ).optimal_path(f)
 
     if args.all_children:
-        improved = 0
-        created = 0
         silent = True
-        with edit_json_file(PRECALC_BASE_FILE) as precalc:
-            for p in tqdm(sus_map.children):
-                best = optimal_path(p)
-                p = p.to_str()
-                if p not in precalc or Path.from_dict(precalc[p]).length > best.length:
-                    if p in precalc:
-                        improved += 1
-                    else:
-                        created += 1
-                    precalc[p] = best.to_dict()
-        print(
-            f"improved: {improved}/{len(sus_map.children)}, created: {created}/{len(sus_map.children)}"
-        )
+        for _ in range(int(input("Cycles: "))):
+            improved = 0
+            created = 0
+            with edit_json_file(PRECALC_BASE_FILE) as precalc:
+                for p in tqdm(sus_map.children):
+                    best = optimal_path(p)
+                    p = p.to_str()
+                    if (
+                        p not in precalc
+                        or Path.from_dict(precalc[p]).length > best.length
+                    ):
+                        if p in precalc:
+                            improved += 1
+                        else:
+                            created += 1
+                        precalc[p] = best.to_dict()
+            print(
+                f"improved: {improved}/{len(sus_map.children)}, created: {created}/{len(sus_map.children)}"
+            )
         return
 
     if args.bunch:
