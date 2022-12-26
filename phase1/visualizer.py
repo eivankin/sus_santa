@@ -1,5 +1,7 @@
 from PIL import Image, ImageDraw
-from data import Coordinates, Map, Route
+from shapely import LineString, Point
+
+from data import Coordinates, Map, Route, Circle, Line
 from util import load_map, info_about_map
 
 IMAGE_SIZE = 10000, 10000
@@ -56,6 +58,26 @@ def visualize_route(m: Map, r: Route) -> Image:
     return image
 
 
+def get_path_between_2_points(m: Map, start: Coordinates, end: Coordinates) -> list[Coordinates]:
+    circles = [Circle.from_snow(area) for area in m.snow_areas if area.r > 0]
+    line = Line.from_two_points(start, end)
+    for circle in circles:
+        c = Point(circle.center.x, circle.center.y)
+        c = c.buffer(circle.radius)
+        l = LineString(
+            [(line.from_pos.x, line.from_pos.y), (line.to_pos.x, line.to_pos.y)]
+        )
+        intersection = l.intersection(c)
+        if intersection.length:
+            1 == 1
+
+
 if __name__ == "__main__":
-    with open("data/map.json") as f:
-        visualize_map(load_map()).save("data/map.png")
+    m = load_map()
+    # visualize_map(m)
+    start, end = Coordinates(0, 0), m.children[1]
+    get_path_between_2_points(m, start, end)
+
+
+    # with open("data/map.json") as f:
+    #     visualize_map(load_map()).save("data/map.png")
