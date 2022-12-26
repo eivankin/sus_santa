@@ -4,9 +4,21 @@ from constants import (
     AUTH_HEADER,
     MAP_URL,
     INFO_URL_TEMPLATE,
-    MAP_FILE_PATH, SNOW_SPEED, BASE_SPEED,
+    MAP_FILE_PATH,
+    SNOW_SPEED,
+    BASE_SPEED,
 )
-from data import Route, RouteResponse, RoundInfo, Map, Bag, Coordinates, SnowArea, Line, Circle
+from data import (
+    Route,
+    RouteResponse,
+    RoundInfo,
+    Map,
+    Bag,
+    Coordinates,
+    SnowArea,
+    Line,
+    Circle,
+)
 from requests import post, get
 
 
@@ -17,15 +29,15 @@ class edit_json_file:
 
     def __enter__(self):
         try:
-            tmp = open(self.path, "r")
-            self.res = json.load(tmp)
-            tmp.close()
+            with open(self.path, "r") as tmp:
+                self.res = json.load(tmp)
         except:
             self.res = self.default
-        self.file = open(self.path, "w")
+        self.file = open(self.path, "a+")
         return self.res
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.file.truncate(0)
         json.dump(self.res, self.file)
         self.file.close()
 
@@ -129,7 +141,7 @@ def path_len(moves: list[Coordinates], snow_areas: list[SnowArea]):
 
 
 def segment_dist(
-        from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
+    from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
 ) -> tuple[float, float, list[float]]:
     dist = from_pos.dist(to_pos)
     line = Line.from_two_points(from_pos, to_pos)
