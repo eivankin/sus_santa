@@ -8,14 +8,42 @@ import json
 import os
 from math import sqrt, ceil
 
-from data import Map, Bag, Coordinates, SnowArea, Route, Circle, Matrix
-from util import load_map, load_bags, save, cleanup_jumps_to_start
+from data import Map, Bag, Coordinates, SnowArea, Route, Circle, Matrix, Path
+from util import load_map, load_bags, save, cleanup_jumps_to_start, path_len
 from checker import segment_dist, segment_time
-from constants import TIMES_MATRIX_PATH, MAP_ID
+from constants import TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
+from copy import deepcopy
+
+
+def update_matrix(matrix: Matrix, vertices: list[Coordinates]) -> Matrix:
+    result = deepcopy(matrix)
+    i = 0
+    with open(PRECALC_BASE_FILE, 'r') as inp:
+        pb = json.load(inp)
+        for j in range(1, len(matrix)):
+            result[i][j] = result[j][i] = path_len(Path.from_dict(pb[vertices[j].to_str()]).path,
+                                                   sus_map.snow_areas)
+    return result
+
+
+def expand(path: list[Coordinates]):
+    with open(PRECALC_BASE_FILE, 'r') as inp:
+        pb = json.load(inp)
+    result: list[Coordinates] = []
+    prev_pos = path[0]
+    for next_pos in path[1:]:
+        if Coordinates(0, 0) in (prev_pos, next_pos):
+            path = Path.from_dict(pb[next_pos.to_str()]).path if next_pos != Coordinates(0, 0) else \
+                Path.from_dict(pb[prev_pos.to_str()]).path[::-1]
+            result.extend(path)
+        else:
+            result.extend([prev_pos, next_pos])
+        prev_pos = next_pos
+    return result
 
 
 def make_distance_matrix(
-    vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
+        vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
 ) -> Matrix:
     num_vertices = len(vertices)
     result: Matrix = [[0] * num_vertices for _ in range(num_vertices)]
@@ -40,17 +68,17 @@ def make_distance_matrix(
 
 
 def create_data_model(
-    vertices: list[Coordinates],
-    snow_areas: list[SnowArea],
-    stack_of_bags: list[Bag],
-    distance_matrix: Matrix | None,
+        vertices: list[Coordinates],
+        snow_areas: list[SnowArea],
+        stack_of_bags: list[Bag],
+        distance_matrix: Matrix | None,
 ) -> dict:
     """Stores the data for the problem."""
     data = {}
     matrix = (
         distance_matrix
         if distance_matrix
-        else make_distance_matrix(vertices, snow_areas)
+        else update_matrix(make_distance_matrix(vertices, snow_areas), vertices)
     )
     data["distance_matrix"] = [[round(e) for e in row] for row in matrix]
     data["demands"] = [0] + [1] * (len(vertices) - 1)
@@ -61,7 +89,7 @@ def create_data_model(
 
 
 def print_solution(
-    vertices: list[Coordinates], data, manager, routing, assignment
+        vertices: list[Coordinates], data, manager, routing, assignment
 ) -> list[Coordinates]:
     """Prints assignment on console."""
     moves = []
@@ -107,7 +135,7 @@ def print_solution(
 
 
 def solve(
-    map_data: Map, stack_of_bags: list[Bag], distance_matrix: Matrix | None = None
+        map_data: Map, stack_of_bags: list[Bag], distance_matrix: Matrix | None = None
 ):
     """Solve the CVRP problem."""
     # Instantiate the data problem.
@@ -182,5 +210,5 @@ if __name__ == "__main__":
     moves = solve(sus_map, bags)
     if moves:
         solution = Route(moves=moves, stack_of_bags=bags, map_id=MAP_ID)
-        solution.moves = cleanup_jumps_to_start(solution.moves)
+        solution.moves = cleanup_jumps_to_start(expand(cleanup_jumps_to_start(solution.moves)))
         save(solution, "./data/solution_vrp.json")

@@ -8,7 +8,7 @@ from tqdm import tqdm
 from data import Coordinates, Matrix, Circle, Route
 from optimal_path import PenatyChecker, ObjectiveChecker, WidePathMutator
 from precalc_base_path import OprimalPathFromBaseFinder, PathFromBaseMutator
-from util import load_map, load_bags, save, cleanup_jumps_to_start, load
+from util import load_map, load_bags, save, cleanup_jumps_to_start, load, path_len
 from checker import segment_dist, segment_time, emulate
 from constants import BASE_SPEED, MAX_COORD
 from itertools import product
@@ -38,9 +38,10 @@ def get_outside(node: Coordinates) -> Coordinates | None:
 
 
 class SusStar(AStar):
-    def __init__(self, goal: Coordinates):
+    def __init__(self, goal: Coordinates, step: int):
         self.__goal = goal
         self.__goal_outside = get_outside(goal)
+        self.step = step
 
     def distance_between(self, n1: Coordinates, n2: Coordinates) -> float:
         d, s, _ = segment_dist(n1, n2, map_data.snow_areas)
@@ -53,6 +54,16 @@ class SusStar(AStar):
             result.append(node_outside)
         if self.__goal_outside:
             result.append(self.__goal_outside)
+
+        step = self.step
+        result.extend(
+            [
+                node + Coordinates(*c)
+                for c in product((-step, 0, step), repeat=2)
+                if c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000
+            ]
+        )
+
         return result
 
     def heuristic_cost_estimate(self, current: Coordinates, goal: Coordinates) -> float:
@@ -63,19 +74,27 @@ def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
     result: list[Coordinates] = []
     prev_pos = m[0]
     for next_pos in tqdm(m[1:]):
-        # prev_out = get_outside(prev_pos) or prev_pos
-        # next_out = get_outside(next_pos) or next_pos
-        # path = min(
-        #     optimal_path(prev_pos, next_pos),
-        #     [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
-        #     list(SusStar(next_pos).astar(prev_pos, next_pos)),
-        #     key=path_len,
+        prev_out = get_outside(prev_pos) or prev_pos
+        next_out = get_outside(next_pos) or next_pos
+        path = min(
+            optimal_path(prev_pos, next_pos),
+            [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
+            # list(SusStar(next_pos).astar(prev_pos, next_pos)),
+            key=pl,
+        )
+        # path = list(
+        #     SusStar(next_pos, clamp(int(prev_pos.dist(next_pos) / 300), 5, 300)).astar(
+        #         prev_pos, next_pos
+        #     )
         # )
-        path = list(SusStar(next_pos).astar(prev_pos, next_pos))
         result.extend(path)
         prev_pos = next_pos
 
     return result
+
+
+def pl(p):
+    return path_len(p, map_data.snow_areas)
 
 
 @lru_cache(maxsize=4096)
@@ -90,15 +109,6 @@ def optimal_path(start: Coordinates, end: Coordinates):
         .optimal_path(start, end)
         .path
     )
-
-
-def st(n1: Coordinates, n2: Coordinates):
-    d, s, _ = segment_dist(n1, n2, map_data.snow_areas)
-    return segment_time(d, s)
-
-
-def path_len(moves: list[Coordinates]):
-    return sum(st(a, b) for a, b in zip(moves[:-1], moves[1:]))
 
 
 def clamp(val, lower, upper):
@@ -119,20 +129,20 @@ def get_nearest_point_outside(circle: Circle, inside_pos: Coordinates):
         if result.x < 0 or result.x > MAX_COORD:
             x = clamp(result.x, 0, MAX_COORD)
             y = (
-                round(
-                    (-1 if inside_pos.y < circle.center.y else 1)
-                    * sqrt(circle.radius**2 - (circle.center.x - x) ** 2)
-                )
-                - circle.center.y
+                    round(
+                        (-1 if inside_pos.y < circle.center.y else 1)
+                        * sqrt(circle.radius ** 2 - (circle.center.x - x) ** 2)
+                    )
+                    - circle.center.y
             )
         else:
             y = clamp(result.y, 0, MAX_COORD)
             x = (
-                round(
-                    (-1 if inside_pos.x < circle.center.x else 1)
-                    * sqrt(circle.radius**2 - (circle.center.y - y) ** 2)
-                )
-                - circle.center.x
+                    round(
+                        (-1 if inside_pos.x < circle.center.x else 1)
+                        * sqrt(circle.radius ** 2 - (circle.center.y - y) ** 2)
+                    )
+                    - circle.center.x
             )
         return Coordinates(x, y)
     return result
@@ -152,5 +162,6 @@ if __name__ == "__main__":
     solution: Route = load(Route, "./data/solution_01GN56RWG7XD9NZZ0KF0QAB8ZC.json")
     bags = load_bags()
     solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
-    print(emulate(solution, map_data))
-    save(solution, "./data/solution_vrp_star.json")
+    res = emulate(solution, map_data)
+    print(res)
+    save(solution, f"./data/solution_vrp_star_{res.total_time}.json")
