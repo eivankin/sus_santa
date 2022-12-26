@@ -34,7 +34,7 @@ class Present(JSONWizard):
 @dataclass
 class Order(JSONWizard):
     map_id: str = json_field("mapID", all=True)
-    presenting_gifts = list[Present]
+    presenting_gifts: list[Present] = json_field("presentingGifts", all=True)
 
 
 @dataclass

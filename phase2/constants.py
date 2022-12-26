@@ -12,6 +12,8 @@ INFO_URL_TEMPLATE = SUBMISSION_URL + "/%s"
 MAP_URL = BASE_URL + f"/json/map/{MAP_ID}.json"
 AUTH_HEADER = {"X-API-Key": API_KEY}
 
+IDS_FILE = "./data/.round_ids.json"
+CACHE_FILE = "./data/.status_cache.json"
 MAP_FILE_PATH = "./data/map.json"
 
 # Game constants
