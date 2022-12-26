@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
-    sol: Route = load(Route, "data/solution_vrp.json")
+    sol: Route = load(Route, "data/solution_vrp_star_16157.json")
     mp = load_map()
     print(emulate(sol, mp))
     print(len(sol.moves))

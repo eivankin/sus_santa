@@ -38,7 +38,7 @@ def get_outside(node: Coordinates) -> Coordinates | None:
 
 
 class SusStar(AStar):
-    def __init__(self, goal: Coordinates, step: int):
+    def __init__(self, goal: Coordinates, step: int = None):
         self.__goal = goal
         self.__goal_outside = get_outside(goal)
         self.step = step
@@ -55,14 +55,15 @@ class SusStar(AStar):
         if self.__goal_outside:
             result.append(self.__goal_outside)
 
-        step = self.step
-        result.extend(
-            [
-                node + Coordinates(*c)
-                for c in product((-step, 0, step), repeat=2)
-                if c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000
-            ]
-        )
+        if self.step is not None:
+            step = self.step
+            result.extend(
+                [
+                    node + Coordinates(*c)
+                    for c in product((-step, 0, step), repeat=2)
+                    if c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000
+                ]
+            )
 
         return result
 
@@ -77,9 +78,11 @@ def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
         prev_out = get_outside(prev_pos) or prev_pos
         next_out = get_outside(next_pos) or next_pos
         path = min(
+            [prev_pos, next_pos],
+            [prev_pos, prev_out, next_out, next_pos],
             optimal_path(prev_pos, next_pos),
             [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
-            # list(SusStar(next_pos).astar(prev_pos, next_pos)),
+            list(SusStar(next_pos, 70).astar(prev_pos, next_pos)),
             key=pl,
         )
         # path = list(
@@ -101,7 +104,7 @@ def pl(p):
 def optimal_path(start: Coordinates, end: Coordinates):
     return (
         OptimalPathFinder(
-            max(1, int(start.dist(end) / 2_000)),
+            max(2, int(start.dist(end) / 2_000)),
             WidePathMutator(1, 3000, 3000).mutate,
             ObjectiveChecker(penalty).objective,
             schedule={"tmax": 100, "tmin": 1, "steps": 1_000, "updates": 0},
@@ -159,7 +162,7 @@ if __name__ == "__main__":
         (Circle.from_snow(s).get_outer_points() for s in map_data.snow_areas), []
     )
 
-    solution: Route = load(Route, "./data/solution_01GN56RWG7XD9NZZ0KF0QAB8ZC.json")
+    solution: Route = load(Route, "./data/solution_vrp_star_16157.json")
     bags = load_bags()
     solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
     res = emulate(solution, map_data)

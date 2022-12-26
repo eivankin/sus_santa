@@ -65,6 +65,7 @@ class Circle:
 
     def get_outer_points(self) -> list[Coordinates]:
         delta = ceil(sqrt(2 * self.radius**2))
+        delta_2 = ceil(sqrt(self.radius ** 2 / 2))
         ds = [
             (0, delta),
             (delta, 0),
@@ -74,6 +75,12 @@ class Circle:
             (self.radius, 0),
             (-self.radius, 0),
             (0, -self.radius),
+            (self.radius, self.radius),
+            (-self.radius, -self.radius),
+            (-delta_2, -delta_2),
+            (-delta_2, delta_2),
+            (delta_2, -delta_2),
+            (delta_2, delta_2)
         ]
 
         result = []
