@@ -18,3 +18,4 @@ MAP_FILE_PATH = "./data/map.json"
 SOLUTIONS_PATH = "./data/solutions/"
 
 # Game constants
+MAX_MONEY = 100000

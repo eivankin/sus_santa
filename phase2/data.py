@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 from dataclass_wizard import JSONWizard, json_field
 
@@ -11,6 +12,15 @@ class Gift(JSONWizard):
 
     def compact(self):
         return f"Gift(id:{self.id:4}, {self.type:15}, price:{self.price})"
+
+    def as_tuple(self) -> tuple[int, str, int]:
+        return self.id, self.type, self.price
+
+    def __eq__(self, other: 'Gift'):
+        return self.as_tuple() == other.as_tuple()
+
+    def __hash__(self):
+        return hash(self.as_tuple())
 
 
 @dataclass
@@ -64,3 +74,24 @@ class RoundInfo(JSONWizard):
     success: bool
     error: str
     data: RoundInfoData
+
+
+class Category(Enum):
+    CONSTRUCTORS = 'constructors'
+    DOLLS = 'dolls'
+    RADIO_CONTROLLED_TOYS = 'radio_controlled_toys'
+    TOY_VEHICLES = 'toy_vehicles'
+    BOARD_GAMES = 'board_games'
+    OUTDOOR_GAMES = 'outdoor_games'
+    PLAYGROUND = 'playground'
+    SOFT_TOYS = 'soft_toys'
+    COMPUTER_GAMES = 'computer_games'
+    SWEETS = 'sweets'
+    BOOKS = 'books'
+    PET = 'pet'
+    CLOTHES = 'clothes'
+
+
+class Gender(Enum):
+    MALE = 'male'
+    FEMALE = 'female'
