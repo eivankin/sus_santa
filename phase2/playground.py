@@ -22,7 +22,7 @@ if __name__ == "__main__":
     info_about_map(sus_map)
 
     # presents = [Present(i, i) for i in range(1, 1001)]
-    presents = most_expensive(sus_map)
+    presents = most_expensive(sus_map, True)
     # presents[0].gift_id = 2000
     sus_solution = Order(MAP_ID, presents)
 

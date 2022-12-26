@@ -1,9 +1,10 @@
 from constants import MAX_MONEY
 from phase2.data import Order, Map, Present, Gender, Category, Child, Gift
 from knapsack import solve
+from random import shuffle
 
 
-def most_expensive(map_data: Map) -> list[Present]:
+def most_expensive(map_data: Map, shuffle_children=False) -> list[Present]:
     values = [g.price for g in map_data.gifts]
     gift_ids = solve(
         values,
@@ -14,6 +15,8 @@ def most_expensive(map_data: Map) -> list[Present]:
     remaining_gifts = {
         map_data.gifts[gid] for gid in gift_ids
     }
+    if shuffle_children:
+        shuffle(map_data.children)
     for child in map_data.children:
         best = get_best_fit(child, remaining_gifts)
         presents.append(Present(child_id=child.id, gift_id=best.id))
