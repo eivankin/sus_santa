@@ -12,6 +12,7 @@ from constants import MAX_COORD
 Bag = list[int]
 Matrix = list[list[float]]
 
+
 @dataclass
 class Coordinates(JSONWizard):
     x: int
@@ -28,7 +29,7 @@ class Coordinates(JSONWizard):
         return hash((self.x, self.y))
 
     def in_circle(self, circle: "Circle") -> bool:
-        return self.dist(circle.center) <= circle.radius
+        return self.dist(circle.center) < circle.radius
 
     def __add__(self, other: "Coordinates") -> "Coordinates":
         return Coordinates(self.x + other.x, self.y + other.y)
@@ -63,8 +64,17 @@ class Circle:
         return cls(center=Coordinates(snow.x, snow.y), radius=snow.r)
 
     def get_outer_points(self) -> list[Coordinates]:
-        delta = ceil(sqrt(2 * self.radius ** 2))
-        ds = [(0, delta), (delta, 0), (-delta, 0), (0, -delta)]
+        delta = ceil(sqrt(2 * self.radius**2))
+        ds = [
+            (0, delta),
+            (delta, 0),
+            (-delta, 0),
+            (0, -delta),
+            (0, self.radius),
+            (self.radius, 0),
+            (-self.radius, 0),
+            (0, -self.radius),
+        ]
 
         result = []
         for (dx, dy) in ds:
@@ -189,7 +199,7 @@ class Line:
         )
 
     @staticmethod
-    # @numba.njit
+    @numba.njit
     def _distance_in_circle(p1x, p1y, p2x, p2y, cx, cy, r):
         p1_in, p2_in = in_circle(p1x, p1y, cx, cy, r), in_circle(p2x, p2y, cx, cy, r)
         if p1_in and p2_in:
