@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numba
 from dataclass_wizard import JSONWizard, json_field
-from math import sqrt, ceil
+from math import sqrt, ceil, cos, radians, pi, sin
 
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -53,6 +53,9 @@ class Coordinates(JSONWizard):
     def in_bounds(self):
         return 0 <= self.x <= MAX_COORD and 0 <= self.y <= MAX_COORD
 
+    def round(self):
+        return Coordinates(round(self.x), round(self.y))
+
 
 @dataclass
 class Circle:
@@ -64,30 +67,21 @@ class Circle:
         return cls(center=Coordinates(snow.x, snow.y), radius=snow.r)
 
     def get_outer_points(self) -> list[Coordinates]:
-        delta = ceil(sqrt(2 * self.radius**2))
-        delta_2 = ceil(sqrt(self.radius ** 2 / 2))
-        ds = [
-            (0, delta),
-            (delta, 0),
-            (-delta, 0),
-            (0, -delta),
-            (0, self.radius),
-            (self.radius, 0),
-            (-self.radius, 0),
-            (0, -self.radius),
-            (self.radius, self.radius),
-            (-self.radius, -self.radius),
-            (-delta_2, -delta_2),
-            (-delta_2, delta_2),
-            (delta_2, -delta_2),
-            (delta_2, delta_2)
-        ]
+        num_vertices = 8
+        angle_step = 2 * pi / num_vertices
+        cos_a = cos(angle_step)
+        sin_a = sin(angle_step)
+        hypot = self.radius / cos(angle_step / 2)
+        ds = [Coordinates(hypot, 0)]
+        for _ in range(num_vertices - 1):
+            (x, y) = (ds[-1].x, ds[-1].y)
+            ds.append(Coordinates(x * cos_a - y * sin_a, x * sin_a + y * cos_a))
 
         result = []
-        for (dx, dy) in ds:
-            c = Coordinates(self.center.x + dx, self.center.y + dy)
+        for dc in ds:
+            c = self.center + dc
             if c.in_bounds():
-                result.append(c)
+                result.append(c.round())
         return result
 
 

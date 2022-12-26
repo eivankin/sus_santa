@@ -1,5 +1,6 @@
 import json
 import os.path
+from collections import defaultdict
 from math import ceil, sqrt
 
 from astar import AStar
@@ -7,7 +8,6 @@ from tqdm import tqdm
 
 from data import Coordinates, Matrix, Circle, Route
 from optimal_path import PenatyChecker, ObjectiveChecker, WidePathMutator
-from precalc_base_path import OprimalPathFromBaseFinder, PathFromBaseMutator
 from util import load_map, load_bags, save, cleanup_jumps_to_start, load, path_len
 from checker import segment_dist, segment_time, emulate
 from constants import BASE_SPEED, MAX_COORD
@@ -16,9 +16,10 @@ from functools import lru_cache
 from optimal_path import OptimalPathFinder
 
 BASE_STEP = 100
+CACHE_SIZE = 65536 * 2
 
 
-@lru_cache(maxsize=65536)
+@lru_cache(maxsize=CACHE_SIZE)
 def is_near_circle(node: Coordinates, buff=BASE_STEP) -> bool:
     for s in map_data.snow_areas:
         c = Circle.from_snow(s)
@@ -28,7 +29,7 @@ def is_near_circle(node: Coordinates, buff=BASE_STEP) -> bool:
     return False
 
 
-@lru_cache(maxsize=65536)
+@lru_cache(maxsize=CACHE_SIZE)
 def get_outside(node: Coordinates) -> Coordinates | None:
     for s in map_data.snow_areas:
         c = Circle.from_snow(s)
@@ -82,14 +83,9 @@ def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
             [prev_pos, prev_out, next_out, next_pos],
             optimal_path(prev_pos, next_pos),
             [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
-            list(SusStar(next_pos, 70).astar(prev_pos, next_pos)),
+            list(SusStar(next_pos).astar(prev_pos, next_pos)),
             key=pl,
         )
-        # path = list(
-        #     SusStar(next_pos, clamp(int(prev_pos.dist(next_pos) / 300), 5, 300)).astar(
-        #         prev_pos, next_pos
-        #     )
-        # )
         result.extend(path)
         prev_pos = next_pos
 
@@ -100,7 +96,7 @@ def pl(p):
     return path_len(p, map_data.snow_areas)
 
 
-@lru_cache(maxsize=4096)
+@lru_cache(maxsize=CACHE_SIZE)
 def optimal_path(start: Coordinates, end: Coordinates):
     return (
         OptimalPathFinder(
@@ -151,8 +147,41 @@ def get_nearest_point_outside(circle: Circle, inside_pos: Coordinates):
     return result
 
 
+def make_matrix(vertices: list[Coordinates]):
+    num_v = len(vertices)
+    result = [[0] * num_v for _ in range(num_v)]
+    edges: dict[str, dict[str, list[Coordinates]]] = defaultdict(dict)
+    with tqdm(total=num_v * num_v // 2) as pbar:
+        for i in range(num_v):
+            for j in range(num_v):
+                if i > j:
+                    prev_pos = vertices[i]
+                    next_pos = vertices[j]
+                    prev_out = get_outside(prev_pos) or prev_pos
+                    next_out = get_outside(next_pos) or next_pos
+                    paths = [
+                        [prev_pos, next_pos],
+                        [prev_pos, prev_out, next_out, next_pos],
+                        # optimal_path(prev_pos, next_pos),
+                        # [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
+                        list(SusStar(next_pos).astar(prev_pos, next_pos))
+                    ]
+                    path = max(((p, pl(p)) for p in paths), key=lambda x: x[1])
+                    moves, length = path
+                    result[i][j] = result[j][i] = length
+                    edges[prev_pos.to_str()][next_pos.to_str()] = moves
+                    pbar.update()
+
+    with open('./data/star_matrix.json') as out:
+        json.dump(result, out)
+
+    with open('./data/star_edges.json') as out:
+        json.dump(edges, out)
+
+
 if __name__ == "__main__":
     map_data = load_map()
+    vs: list[Coordinates] = [Coordinates(0, 0)] + map_data.children
 
     circles = [Circle.from_snow(s) for s in map_data.snow_areas]
     penalty = PenatyChecker(circles).penalty
@@ -162,9 +191,11 @@ if __name__ == "__main__":
         (Circle.from_snow(s).get_outer_points() for s in map_data.snow_areas), []
     )
 
-    solution: Route = load(Route, "./data/solution_vrp_star_16157.json")
-    bags = load_bags()
-    solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
-    res = emulate(solution, map_data)
-    print(res)
-    save(solution, f"./data/solution_vrp_star_{res.total_time}.json")
+    make_matrix(vs)
+    #
+    # solution: Route = load(Route, "./data/solution_vrp.json")
+    # bags = load_bags()
+    # solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
+    # res = emulate(solution, map_data)
+    # print(res)
+    # save(solution, f"./data/solution_vrp_star_{res.total_time}.json")
