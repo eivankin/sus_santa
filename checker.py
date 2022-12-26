@@ -66,6 +66,8 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
     segments: list[EmulatorReportSegment] = []
     tot_snow = 0
     for next_pos in solution.moves + [None]:
+        assert curr_pos.in_bounds()
+
         if curr_bag and curr_pos in children:
             curr_bag.pop()
 

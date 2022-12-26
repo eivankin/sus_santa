@@ -1,6 +1,6 @@
 import json
 import os.path
-from math import ceil
+from math import ceil, sqrt
 
 from astar import AStar
 from tqdm import tqdm
@@ -10,7 +10,7 @@ from optimal_path import PenatyChecker, ObjectiveChecker
 from precalc_base_path import OprimalPathFromBaseFinder, PathFromBaseMutator
 from util import load_map, load_bags, save, cleanup_jumps_to_start, load
 from checker import segment_dist, segment_time, emulate
-from constants import BASE_SPEED
+from constants import BASE_SPEED, MAX_COORD
 from itertools import product
 from functools import lru_cache
 
@@ -50,12 +50,7 @@ class SusStar(AStar):
         # return [self.__goal] + [node + Coordinates(*c)
         #                         for c in product((-step, 0, step), repeat=2) if
         #                         c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000]
-        step = 200
-        result = [self.__goal] + [
-            node + Coordinates(*c)
-            for c in product((-step, 0, step), repeat=2)
-            if c != (0, 0) and 0 <= c[0] <= 10_000 and 0 <= c[1] <= 10_000
-        ]
+        result = [self.__goal] + outer
         node_outside = get_outside(node)
         if node_outside:
             result.append(node_outside)
@@ -67,32 +62,11 @@ class SusStar(AStar):
         return current.dist(goal) / BASE_SPEED
 
 
-@lru_cache(maxsize=1024)
-def optimal_path(start: Coordinates, f: Coordinates) -> list[Coordinates]:
-    segmentation = int(f.dist(start) / 2_000)
-    if segmentation == 0:
-        return [start, f]
-
-    return (
-        OprimalPathFromBaseFinder(
-            segmentation,
-            PathFromBaseMutator(1000, 1000).mutate,
-            objective,
-            schedule={"tmax": 100, "tmin": 1, "steps": 1_000, "updates": 0},
-        )
-        .optimal_path(start, f)
-        .path
-    )
-
-
 def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
     result: list[Coordinates] = []
     prev_pos = m[0]
     for next_pos in tqdm(m[1:]):
-        prev_out = get_outside(prev_pos) or prev_pos
-        next_out = get_outside(next_pos) or next_pos
-        path = min(optimal_path(prev_pos, next_pos),
-                   [prev_pos] + optimal_path(prev_out, next_out) + [next_pos], key=path_len)
+        path = list(SusStar(next_pos).astar(prev_pos, next_pos))
         result.extend(path)
         prev_pos = next_pos
 
@@ -108,12 +82,31 @@ def path_len(moves: list[Coordinates]):
     return sum(st(a, b) for a, b in zip(moves[:-1], moves[1:]))
 
 
+def clamp(val, lower, upper):
+    if val < lower:
+        return lower
+    if val > upper:
+        return upper
+    return val
+
+
 def get_nearest_point_outside(circle: Circle, inside_pos: Coordinates):
     diff = inside_pos - circle.center
     diff = diff * (circle.radius / diff.dist(Coordinates(0, 0)))
     diff.x = ceil(diff.x)
     diff.y = ceil(diff.y)
-    return diff + circle.center
+    result = diff + circle.center
+    if not result.in_bounds():
+        if result.x < 0 or result.x > MAX_COORD:
+            x = clamp(result.x, 0, MAX_COORD)
+            y = round((-1 if inside_pos.y < circle.center.y else 1) *
+                      sqrt(circle.radius ** 2 - (circle.center.x - x) ** 2)) - circle.center.y
+        else:
+            y = clamp(result.y, 0, MAX_COORD)
+            x = round((-1 if inside_pos.x < circle.center.x else 1) *
+                      sqrt(circle.radius ** 2 - (circle.center.y - y) ** 2)) - circle.center.x
+        return Coordinates(x, y)
+    return result
 
 
 if __name__ == "__main__":
@@ -122,6 +115,8 @@ if __name__ == "__main__":
     circles = [Circle.from_snow(s) for s in map_data.snow_areas]
     penalty = PenatyChecker(circles).penalty
     objective = ObjectiveChecker(penalty).objective
+
+    outer = sum((Circle.from_snow(s).get_outer_points() for s in map_data.snow_areas), [])
 
     solution: Route = load(Route, "./data/solution_vrp.json")
     bags = load_bags()

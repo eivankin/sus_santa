@@ -2,14 +2,15 @@ from dataclasses import dataclass
 
 import numba
 from dataclass_wizard import JSONWizard, json_field
-from math import sqrt
+from math import sqrt, ceil
 
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
+from constants import MAX_COORD
+
 Bag = list[int]
 Matrix = list[list[float]]
-
 
 @dataclass
 class Coordinates(JSONWizard):
@@ -48,6 +49,9 @@ class Coordinates(JSONWizard):
     def to_str(self):
         return f"{self.x} {self.y}"
 
+    def in_bounds(self):
+        return 0 <= self.x <= MAX_COORD and 0 <= self.y <= MAX_COORD
+
 
 @dataclass
 class Circle:
@@ -57,6 +61,17 @@ class Circle:
     @classmethod
     def from_snow(cls, snow: "SnowArea"):
         return cls(center=Coordinates(snow.x, snow.y), radius=snow.r)
+
+    def get_outer_points(self) -> list[Coordinates]:
+        delta = ceil(sqrt(2 * self.radius ** 2))
+        ds = [(0, delta), (delta, 0), (-delta, 0), (0, -delta)]
+
+        result = []
+        for (dx, dy) in ds:
+            c = Coordinates(self.center.x + dx, self.center.y + dy)
+            if c.in_bounds():
+                result.append(c)
+        return result
 
 
 @dataclass
