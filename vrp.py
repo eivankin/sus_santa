@@ -11,7 +11,7 @@ from math import sqrt, ceil
 from data import Map, Bag, Coordinates, SnowArea, Route, Circle, Matrix, Path
 from util import load_map, load_bags, save, cleanup_jumps_to_start, path_len
 from checker import segment_dist, segment_time
-from constants import TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
+from constants import TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE, BASE_SPEED
 from copy import deepcopy
 
 
@@ -21,8 +21,8 @@ def update_matrix(matrix: Matrix, vertices: list[Coordinates]) -> Matrix:
     with open(PRECALC_BASE_FILE, 'r') as inp:
         pb = json.load(inp)
         for j in range(1, len(matrix)):
-            result[i][j] = result[j][i] = path_len(Path.from_dict(pb[vertices[j].to_str()]).path,
-                                                   sus_map.snow_areas)
+            result[i][j] = result[j][i] = Path.from_dict(pb[vertices[j].to_str()]).length \
+                                          / BASE_SPEED
     return result
 
 
