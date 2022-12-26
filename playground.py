@@ -115,10 +115,9 @@ if __name__ == "__main__":
             expand(cleanup_jumps_to_start(solution.moves))
         )
 
-    sus_solution = Route(moves=moves, map_id=MAP_ID, stack_of_bags=stack_of_bags)
     # print("cache misses: " + json.dumps(cache_misses))
     # print("cache hits: " + json.dumps(cache_hits))
-    print(emulate(sus_solution, sus_map))
+    print(emulate(solution, sus_map))
     if input("visualize? (y/n): ").lower() in ("y", "yes"):
         visualizer.visualize_route(sus_map, sus_solution).save("data/route.png")
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
