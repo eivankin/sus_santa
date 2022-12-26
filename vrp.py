@@ -11,30 +11,36 @@ from math import sqrt, ceil
 from data import Map, Bag, Coordinates, SnowArea, Route, Circle, Matrix, Path
 from util import load_map, load_bags, save, cleanup_jumps_to_start, path_len
 from checker import segment_dist, segment_time
-from constants import TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
+from constants import BASE_SPEED, TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
 from copy import deepcopy
+
+from visualizer import visualize_route
 
 
 def update_matrix(matrix: Matrix, vertices: list[Coordinates]) -> Matrix:
     result = deepcopy(matrix)
     i = 0
-    with open(PRECALC_BASE_FILE, 'r') as inp:
+    with open(PRECALC_BASE_FILE, "r") as inp:
         pb = json.load(inp)
         for j in range(1, len(matrix)):
-            result[i][j] = result[j][i] = path_len(Path.from_dict(pb[vertices[j].to_str()]).path,
-                                                   sus_map.snow_areas)
+            result[i][j] = result[j][i] = (
+                Path.from_dict(pb[vertices[j].to_str()]).length / BASE_SPEED
+            )
     return result
 
 
 def expand(path: list[Coordinates]):
-    with open(PRECALC_BASE_FILE, 'r') as inp:
+    with open(PRECALC_BASE_FILE, "r") as inp:
         pb = json.load(inp)
     result: list[Coordinates] = []
     prev_pos = path[0]
     for next_pos in path[1:]:
         if Coordinates(0, 0) in (prev_pos, next_pos):
-            path = Path.from_dict(pb[next_pos.to_str()]).path if next_pos != Coordinates(0, 0) else \
-                Path.from_dict(pb[prev_pos.to_str()]).path[::-1]
+            path = (
+                Path.from_dict(pb[next_pos.to_str()]).path
+                if next_pos != Coordinates(0, 0)
+                else Path.from_dict(pb[prev_pos.to_str()]).path[::-1]
+            )
             result.extend(path)
         else:
             result.extend([prev_pos, next_pos])
@@ -43,7 +49,7 @@ def expand(path: list[Coordinates]):
 
 
 def make_distance_matrix(
-        vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
+    vertices: list[Coordinates], snow_areas: list[SnowArea], force_recalc=False
 ) -> Matrix:
     num_vertices = len(vertices)
     result: Matrix = [[0] * num_vertices for _ in range(num_vertices)]
@@ -68,10 +74,10 @@ def make_distance_matrix(
 
 
 def create_data_model(
-        vertices: list[Coordinates],
-        snow_areas: list[SnowArea],
-        stack_of_bags: list[Bag],
-        distance_matrix: Matrix | None,
+    vertices: list[Coordinates],
+    snow_areas: list[SnowArea],
+    stack_of_bags: list[Bag],
+    distance_matrix: Matrix | None,
 ) -> dict:
     """Stores the data for the problem."""
     data = {}
@@ -89,7 +95,7 @@ def create_data_model(
 
 
 def print_solution(
-        vertices: list[Coordinates], data, manager, routing, assignment
+    vertices: list[Coordinates], data, manager, routing, assignment
 ) -> list[Coordinates]:
     """Prints assignment on console."""
     moves = []
@@ -135,7 +141,10 @@ def print_solution(
 
 
 def solve(
-        map_data: Map, stack_of_bags: list[Bag], distance_matrix: Matrix | None = None
+    map_data: Map,
+    stack_of_bags: list[Bag],
+    distance_matrix: Matrix | None = None,
+    tl: int = 1,
 ):
     """Solve the CVRP problem."""
     # Instantiate the data problem.
@@ -194,7 +203,7 @@ def solve(
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(1)
+    search_parameters.time_limit.FromSeconds(tl)
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
@@ -207,8 +216,10 @@ def solve(
 if __name__ == "__main__":
     sus_map = load_map()
     bags = load_bags()
-    moves = solve(sus_map, bags)
+    moves = solve(sus_map, bags, tl=int(input("Time limit: ")))
     if moves:
         solution = Route(moves=moves, stack_of_bags=bags, map_id=MAP_ID)
-        solution.moves = cleanup_jumps_to_start(expand(cleanup_jumps_to_start(solution.moves)))
+        solution.moves = cleanup_jumps_to_start(
+            expand(cleanup_jumps_to_start(solution.moves))
+        )
         save(solution, "./data/solution_vrp.json")
