@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from data import Coordinates, Matrix, Circle, Route
 from optimal_path import PenatyChecker, ObjectiveChecker, WidePathMutator
-from precalc_base_path import OprimalPathFromBaseFinder, PathFromBaseMutator
 from util import load_map, load_bags, save, cleanup_jumps_to_start, load, path_len
 from checker import segment_dist, segment_time, emulate
 from constants import BASE_SPEED, MAX_COORD
@@ -82,14 +81,9 @@ def expand_moves(m: list[Coordinates]) -> list[Coordinates]:
             [prev_pos, prev_out, next_out, next_pos],
             optimal_path(prev_pos, next_pos),
             [prev_pos] + optimal_path(prev_out, next_out) + [next_pos],
-            list(SusStar(next_pos, 70).astar(prev_pos, next_pos)),
+            list(SusStar(next_pos).astar(prev_pos, next_pos)),
             key=pl,
         )
-        # path = list(
-        #     SusStar(next_pos, clamp(int(prev_pos.dist(next_pos) / 300), 5, 300)).astar(
-        #         prev_pos, next_pos
-        #     )
-        # )
         result.extend(path)
         prev_pos = next_pos
 
@@ -100,7 +94,7 @@ def pl(p):
     return path_len(p, map_data.snow_areas)
 
 
-@lru_cache(maxsize=4096)
+@lru_cache(maxsize=65536)
 def optimal_path(start: Coordinates, end: Coordinates):
     return (
         OptimalPathFinder(
@@ -162,7 +156,7 @@ if __name__ == "__main__":
         (Circle.from_snow(s).get_outer_points() for s in map_data.snow_areas), []
     )
 
-    solution: Route = load(Route, "./data/solution_vrp_star_16157.json")
+    solution: Route = load(Route, "./data/solution_vrp.json")
     bags = load_bags()
     solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
     res = emulate(solution, map_data)
