@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 from requests import post, get
 
@@ -84,6 +85,16 @@ def info_about_map(m: Map) -> None:
     print(f"Genders: {genders}")
     ages = {c.age for c in m.children}
     print(f"Ages: {ages}")
+
+    age_to_child = defaultdict(int)
+    for c in m.children:
+        age_to_child[c.age] += 1
+    print(f"Age to child: {list(sorted(age_to_child.items()))}")
+
+    gender_to_child = defaultdict(int)
+    for c in m.children:
+        gender_to_child[c.gender] += 1
+    print(f"Gender to child: {list(sorted(gender_to_child.items()))}")
 
     print(f"Number of gifts: {len(m.gifts)}")
     prices = {g.price for g in m.gifts}
