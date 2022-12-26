@@ -104,20 +104,20 @@ class OprimalPathFromBaseFinder:
         if schedule is not None:
             self.schedule = schedule
 
-    def optimal_path(self, f: Coordinates) -> Path:
+    def optimal_path(self, start: Coordinates, f: Coordinates) -> Path:
         mutate = self.mutate
         objective = self.objective
 
-        l = f.dist(base)
+        l = f.dist(start)
         if l < 200:
-            return Path([base, f], objective([base, f]))
+            return Path([start, f], objective([start, f]))
 
         cos_a = f.x / l
         sin_a = f.y / l
 
         class PathAnnealer(Annealer):
             def move(self):
-                path = [base] + mutate(self.state.path[1:-1], cos_a, sin_a, l) + [f]
+                path = [start] + mutate(self.state.path[1:-1], cos_a, sin_a, l) + [f]
                 length = objective(path)
                 self.state = Path(path, length)
 
@@ -125,12 +125,12 @@ class OprimalPathFromBaseFinder:
                 return self.state.length
 
         init = (
-            [base] + self.rand_path_from_base(self.segmentation, cos_a, sin_a, l) + [f]
+            [start] + self.rand_path_from_base(self.segmentation, cos_a, sin_a, l) + [f]
         )
         annealer = PathAnnealer(Path(init, objective(init)))
         annealer.set_schedule(self.schedule)
         best, cost = annealer.anneal()
-        linear = Path([base, f], objective([base, f]))
+        linear = Path([start, f], objective([start, f]))
         if cost > linear.length:
             return linear
         # NOTE: assuming int rounding does not change path len significantly
@@ -204,9 +204,7 @@ def main():
                     else:
                         created += 1
                     precalc[p] = best.to_dict()
-        print(
-            f"improved: {improved}/{len(points)}, created: {created}/{len(points)}"
-        )
+        print(f"improved: {improved}/{len(points)}, created: {created}/{len(points)}")
         return
 
     if args.point is None:
