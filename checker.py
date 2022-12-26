@@ -36,7 +36,7 @@ def segment_dist(
         line.distance_in_circle(Circle.from_snow(snow)) for snow in snow_areas
     ]
     snow_dist = sum(distances_in_snow)
-    assert snow_dist <= dist
+    assert snow_dist <= dist or snow_dist - dist < 1
     return dist, snow_dist, distances_in_snow
 
 

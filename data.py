@@ -186,6 +186,7 @@ class Line:
             )
             intersection = l.intersection(c)
             length = intersection.length
+            assert length != 0 or intersection.is_empty
             return length
 
         return Line._distance_in_circle(
