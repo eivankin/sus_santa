@@ -76,7 +76,7 @@ AGES_4_6 = AGES_0_3.union(
 AGES_7_10 = ALL_CATEGORIES
 
 AGE_TO_CATEGORY = [AGES_0_3] * 4 + [AGES_4_6] * 3 + [AGES_7_10] * 4
-AVG_PRICE = 100
+AVG_PRICE = 90
 
 
 def get_best_fit(
