@@ -2,7 +2,8 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.data import Solution, Map, Present, Gift
+from phase3.data import Solution, Map, Present, Gift, Coordinates
+from phase3.greedy import most_expensive, get_sol_cost
 from util import (
     get_map,
     save_map,
@@ -25,17 +26,20 @@ if __name__ == "__main__":
 
     info_about_map(sus_map)
 
-    selected_gifts = sorted(
-        sus_map.gifts, key=lambda g: (g.price, g.volume, g.weight))[:len(sus_map.children)]
-    presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
-                enumerate(selected_gifts)]
+    # selected_gifts = sorted(
+    #     sus_map.gifts, key=lambda g: (g.price, g.volume, g.weight))[:len(sus_map.children)]
+    # presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
+    #             enumerate(selected_gifts)]
+    presents = most_expensive(sus_map.gifts, sus_map.children)
+    print('Cost:', get_sol_cost(sus_map, presents))
     moves = []
     bags = []
     for p in presents:
         bags.append([p.gift_id])
         moves.append(sus_map.children[p.child_id - 1].coords())
+        moves.append(Coordinates(0, 0))
 
-    sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags)
+    sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags[::-1])
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)
