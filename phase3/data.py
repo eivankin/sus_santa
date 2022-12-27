@@ -6,7 +6,7 @@ import numba
 from dataclass_wizard import JSONWizard, json_field
 from shapely import Point, LineString
 
-from phase3.constants import MAX_COORD
+from constants import MAX_COORD
 
 Bag = list[int]
 Matrix = list[list[float]]
@@ -14,14 +14,14 @@ Matrix = list[list[float]]
 
 @dataclass
 class Circle:
-    center: 'Coordinates'
+    center: "Coordinates"
     radius: int
 
     @classmethod
     def from_snow(cls, snow: "SnowArea"):
         return cls(center=Coordinates(snow.x, snow.y), radius=snow.r)
 
-    def get_outer_points(self) -> list['Coordinates']:
+    def get_outer_points(self) -> list["Coordinates"]:
         num_vertices = 8
         angle_step = 2 * pi / num_vertices
         cos_a = cos(angle_step)
@@ -42,9 +42,9 @@ class Circle:
 
 @dataclass
 class Map(JSONWizard):
-    gifts: list['Gift']
-    children: list['Child']
-    snow_areas: list['SnowArea'] = json_field('snowArea', all=True)
+    gifts: list["Gift"]
+    children: list["Child"]
+    snow_areas: list["SnowArea"] = json_field("snowArea", all=True)
 
 
 @dataclass
@@ -203,7 +203,7 @@ class Category(Enum):
 
 @numba.njit
 def in_circle(x, y, cx, cy, r):
-    return (x - cx) ** 2 + (y - cy) ** 2 < r ** 2
+    return (x - cx) ** 2 + (y - cy) ** 2 < r**2
 
 
 @dataclass
@@ -256,9 +256,9 @@ class Line:
 
         (x1, y1), (x2, y2) = (p1x - cx, p1y - cy), (p2x - cx, p2y - cy)
         dx, dy = (x2 - x1), (y2 - y1)
-        dr = (dx ** 2 + dy ** 2) ** 0.5
+        dr = (dx**2 + dy**2) ** 0.5
         big_d = x1 * y2 - x2 * y1
-        discriminant = r ** 2 * dr ** 2 - big_d ** 2
+        discriminant = r**2 * dr**2 - big_d**2
 
         if discriminant <= 0:
             return 0
@@ -266,9 +266,9 @@ class Line:
         intersections = [
             (
                 cx
-                + (big_d * dy + sign * (-1 if dy < 0 else 1) * dx * discriminant ** 0.5)
-                / dr ** 2,
-                cy + (-big_d * dx + sign * abs(dy) * discriminant ** 0.5) / dr ** 2,
+                + (big_d * dy + sign * (-1 if dy < 0 else 1) * dx * discriminant**0.5)
+                / dr**2,
+                cy + (-big_d * dx + sign * abs(dy) * discriminant**0.5) / dr**2,
             )
             for sign in ((1, -1) if dy < 0 else (-1, 1))
         ]  # This makes sure the order along the segment is correct

@@ -8,9 +8,9 @@ from dataclasses import dataclass
 
 from tqdm import tqdm
 
-from phase3.constants import SOLUTIONS_PATH, CACHE_FILE, MIN_AGE, MAX_AGE
-from phase3.data import Solution, Map, Category, RoundInfo, Gender
-from phase3.util import load, load_map, save
+from constants import SOLUTIONS_PATH, CACHE_FILE, MIN_AGE, MAX_AGE
+from data import Solution, Map, Category, RoundInfo, Gender
+from util import load, load_map, save
 
 from random import randint, randrange
 

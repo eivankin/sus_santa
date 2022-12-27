@@ -8,10 +8,16 @@ from tqdm import tqdm
 import json
 import os
 
-from phase3.data import Map, Bag, Coordinates, SnowArea, Route, Matrix, Path
-from phase3.util import load_map, load_bags, save, \
-    cleanup_jumps_to_start, segment_dist, segment_time
-from phase3.constants import BASE_SPEED, TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
+from data import Map, Bag, Coordinates, SnowArea, Route, Matrix, Path
+from util import (
+    load_map,
+    load_bags,
+    save,
+    cleanup_jumps_to_start,
+    segment_dist,
+    segment_time,
+)
+from constants import BASE_SPEED, TIMES_MATRIX_PATH, MAP_ID, PRECALC_BASE_FILE
 from copy import deepcopy
 
 
@@ -147,7 +153,9 @@ def solve(
 ):
     """Solve the CVRP problem."""
     # Instantiate the data problem.
-    vertices: list[Coordinates] = [Coordinates(0, 0)] + [c.coords() for c in map_data.children]
+    vertices: list[Coordinates] = [Coordinates(0, 0)] + [
+        c.coords() for c in map_data.children
+    ]
     data = create_data_model(
         vertices, map_data.snow_areas, stack_of_bags, distance_matrix
     )

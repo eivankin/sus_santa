@@ -10,8 +10,18 @@ from constants import (
     MAP_FILE_PATH,
     INFO_URL_TEMPLATE,
 )
-from phase3.constants import BASE_SPEED, WIND_SPEED, SNOW_SPEED
-from phase3.data import Solution, SolutionResponse, Map, RoundInfo, Coordinates, SnowArea, Line, Circle, Bag
+from constants import BASE_SPEED, WIND_SPEED, SNOW_SPEED
+from data import (
+    Solution,
+    SolutionResponse,
+    Map,
+    RoundInfo,
+    Coordinates,
+    SnowArea,
+    Line,
+    Circle,
+    Bag,
+)
 
 
 class edit_json_file:
@@ -150,7 +160,7 @@ def load_bags() -> list[Bag]:
 
 
 def segment_dist(
-        from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
+    from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
 ) -> tuple[float, float, list[float]]:
     dist = from_pos.dist(to_pos)
     line = Line.from_two_points(from_pos, to_pos)

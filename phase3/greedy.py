@@ -5,23 +5,23 @@ from collections import defaultdict
 from tqdm import tqdm
 
 from constants import MAX_MONEY
-from phase3.data import Solution, Map, Present, Gender, Category, Child, Gift
+from data import Solution, Map, Present, Gender, Category, Child, Gift
 from knapsack import solve
 from random import shuffle
 
-from phase3.happiness_estimator import Weights
+from happiness_estimator import Weights
 
 child_cache = defaultdict(int)
 
 
 def calc_values_for_knapsack(
-        weights: Weights, gift: Gift, children: list[Child]
+    weights: Weights, gift: Gift, children: list[Child]
 ) -> int:
     max_val = 0
     max_c = None
     for i, c in enumerate(children):
         h = weights.get_gender(c.gender)[c.age][Category(gift.type)](gift.price) // (
-                child_cache[i] + 1
+            child_cache[i] + 1
         )
         if h > max_val:
             max_val = h
@@ -38,12 +38,12 @@ def pass_weights(weights: Weights, func):
 
 
 def most_expensive(
-        sorted_gifts: list[Gift],
-        children: list[Child],
-        shuffle_children=False,
-        fit_function=None,
-        use_knapsack=False,
-        knapsack_value_function=None,
+    sorted_gifts: list[Gift],
+    children: list[Child],
+    shuffle_children=False,
+    fit_function=None,
+    use_knapsack=False,
+    knapsack_value_function=None,
 ) -> list[Present]:
     presents: list[Present] = []
     if use_knapsack:
@@ -102,29 +102,32 @@ AVG_PRICE = 40
 
 
 def get_best_fit(
-        child: Child, gifts: set[Gift], money_so_far: int, remaining_children: int
+    child: Child, gifts: set[Gift], money_so_far: int, remaining_children: int
 ) -> Gift:
     for categories in (
-            AGE_TO_CATEGORY[child.age].intersection(
-                GENDER_TO_CATEGORY[Gender(child.gender)]
-            ),
-            AGE_TO_CATEGORY[child.age].intersection(GENDER_TO_CATEGORY["ANY"]),
-            ALL_CATEGORIES,
+        AGE_TO_CATEGORY[child.age].intersection(
+            GENDER_TO_CATEGORY[Gender(child.gender)]
+        ),
+        AGE_TO_CATEGORY[child.age].intersection(GENDER_TO_CATEGORY["ANY"]),
+        ALL_CATEGORIES,
     ):
         best_fits = get_by_categories(categories, gifts)
         if not best_fits:
             continue
-        filtered = list(filter(
-            lambda g: g.price
-                      + AVG_PRICE * max(remaining_children - 1, 0)
-                      + money_so_far
-                      <= MAX_MONEY,
-            best_fits,
-        ))
+        filtered = list(
+            filter(
+                lambda g: g.price
+                + AVG_PRICE * max(remaining_children - 1, 0)
+                + money_so_far
+                <= MAX_MONEY,
+                best_fits,
+            )
+        )
         if filtered:
-            return max(filtered,
-                       key=lambda g: g.price,
-                       )
+            return max(
+                filtered,
+                key=lambda g: g.price,
+            )
 
 
 def get_by_categories(categories: set[Category], gifts: set[Gift]) -> list[Gift]:
@@ -132,18 +135,18 @@ def get_by_categories(categories: set[Category], gifts: set[Gift]) -> list[Gift]
 
 
 def get_best_fit_with_weights(
-        weights: Weights,
-        child: Child,
-        gifts: set[Gift],
-        money_so_far: int,
-        remaining_children: int,
+    weights: Weights,
+    child: Child,
+    gifts: set[Gift],
+    money_so_far: int,
+    remaining_children: int,
 ):
     return max(
         filter(
             lambda g: g.price
-                      + AVG_PRICE * max(remaining_children - 1, 0)
-                      + money_so_far
-                      <= MAX_MONEY,
+            + AVG_PRICE * max(remaining_children - 1, 0)
+            + money_so_far
+            <= MAX_MONEY,
             gifts,
         ),
         key=lambda g: weights.get_gender(child.gender)[child.age][Category(g.type)](

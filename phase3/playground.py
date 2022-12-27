@@ -29,11 +29,11 @@ class Presents(JSONWizard):
 
 
 def get_presents(force=False) -> list[Present]:
-    if force or not os.path.exists('p.json'):
+    if force or not os.path.exists("p.json"):
         ps = most_expensive(sus_map.gifts, sus_map.children)
-        save(Presents(ps), 'p.json')
+        save(Presents(ps), "p.json")
     else:
-        return load(Presents, 'p.json').presents
+        return load(Presents, "p.json").presents
 
 
 if __name__ == "__main__":
