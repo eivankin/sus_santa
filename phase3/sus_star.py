@@ -127,25 +127,28 @@ def get_nearest_point_outside(circle: Circle, inside_pos: Coordinates):
     diff.y = ceil(diff.y)
     result = diff + circle.center
     if not result.in_bounds():
-        if result.x < 0 or result.x > MAX_COORD:
-            x = clamp(result.x, 0, MAX_COORD)
-            y = (
-                    round(
-                        (-1 if inside_pos.y < circle.center.y else 1)
-                        * sqrt(circle.radius ** 2 - (circle.center.x - x) ** 2)
-                    )
-                    - circle.center.y
-            )
+        if (0 <= result.x <= 10_000) != (0 <= result.y <= 10_000):
+            if result.x < 0 or result.x > MAX_COORD:
+                x = clamp(result.x, 0, MAX_COORD)
+                y = (
+                        round(
+                            (-1 if inside_pos.y < circle.center.y else 1)
+                            * sqrt(circle.radius ** 2 - (circle.center.x - x) ** 2)
+                        )
+                        - circle.center.y
+                )
+            else:
+                y = clamp(result.y, 0, MAX_COORD)
+                x = (
+                        round(
+                            (-1 if inside_pos.x < circle.center.x else 1)
+                            * sqrt(circle.radius ** 2 - (circle.center.y - y) ** 2)
+                        )
+                        - circle.center.x
+                )
+            return Coordinates(x, y)
         else:
-            y = clamp(result.y, 0, MAX_COORD)
-            x = (
-                    round(
-                        (-1 if inside_pos.x < circle.center.x else 1)
-                        * sqrt(circle.radius ** 2 - (circle.center.y - y) ** 2)
-                    )
-                    - circle.center.x
-            )
-        return Coordinates(x, y)
+            return inside_pos
     return result
 
 
@@ -195,9 +198,9 @@ if __name__ == "__main__":
 
     # make_matrix(vs)
     #
-    solution: Route = load(Route, "./data/solutions/01GNA5GEJV3571A8GSYCVR3G0M.json")
+    solution: Route = load(Route, "./data/solutions/01GNA6WHX38DG24628XR8ZWXS7.json")
     bags = load_bags()
     solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
+    save(solution, f"./data/star.json")
     res = emulate(solution, map_data)
     print(res)
-    save(solution, f"./data/solution_vrp_star_{res.total_time}.json")
