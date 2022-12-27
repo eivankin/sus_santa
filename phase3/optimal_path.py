@@ -155,7 +155,7 @@ def main():
         sengemtation,
         WidePathMutator(1, 3000, 3000).mutate,
         objective,
-        schedule={"tmax": 100, "tmin": 1, "steps": 500, "updates": 500},
+        schedule={"tmax": 100, "tmin": 1, "steps": 5000, "updates": 500},
     ).optimal_path(a, b)
 
     print()
