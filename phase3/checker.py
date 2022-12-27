@@ -50,7 +50,7 @@ def emulate(solution: Solution, map_data: Map) -> RoundInfoData:
     segments: list[EmulatorReportSegment] = []
     tot_snow = 0
     for next_pos in solution.moves + [None]:
-        assert curr_pos.in_bounds()
+        assert curr_pos.in_bounds(), f'{curr_pos}'
 
         if curr_bag and curr_pos in children:
             curr_bag.pop()
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
-    sol: Solution = load(Solution, "data/solution_vrp.json")
+    sol: Solution = load(Solution, "data/star.json")
     mp = load_map()
     print(emulate(sol, mp))
     print(len(sol.moves))
