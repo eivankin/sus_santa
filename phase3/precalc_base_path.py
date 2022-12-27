@@ -179,6 +179,7 @@ def main():
             created = 0
             with edit_json_file(PRECALC_BASE_FILE) as precalc:
                 for p in tqdm(sus_map.children):
+                    p = p.coords()
                     best = optimal_path(p)
                     p = p.to_str()
                     if (
@@ -230,7 +231,7 @@ def main():
                 print("path:", path.path[1:-1])
                 if input("draw? (y/n): ") == "y":
                     visualize_route(sus_map, Route(path.path, None, None)).save(
-                       "data/path.png"
+                        "data/path.png"
                     )
     else:
         print("linear: ", objective([base, args.point]))
