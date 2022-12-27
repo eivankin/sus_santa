@@ -7,6 +7,7 @@ from checker import emulate
 from data import Solution, Map, Present, Gift, Coordinates, Child
 from greedy import most_expensive, get_sol_cost
 from bin_packing import solve_bin_pack
+from visualizer import visualize_moves
 from util import (
     get_map,
     save_map,
@@ -67,6 +68,10 @@ if __name__ == "__main__":
 
     sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags[::-1])
     print(emulate(sus_solution, sus_map))
+
+    image_path = "./data/route.png"
+    visualize_moves(sus_map, sus_solution.moves).save(image_path)
+    print(f"Saved at {image_path}...")
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)

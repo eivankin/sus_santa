@@ -15,8 +15,7 @@ ROUTE_COLOR = (255, 255, 255)
 
 
 def visualize_map(m: Map) -> Image:
-    info_about_map(m)
-
+    # info_about_map(m)
     print(" === DRAWING === ")
 
     image = Image.new("RGB", IMAGE_SIZE, BACKGROUND_COLOR)
@@ -49,11 +48,11 @@ def visualize_map(m: Map) -> Image:
     return image
 
 
-def visualize_route(m: Map, r: Route) -> Image:
+def visualize_moves(m: Map, moves: list[Coordinates]) -> Image:
     image = visualize_map(m)
     draw = ImageDraw.Draw(image)
 
-    draw.line([(c.x, c.y) for c in r.moves], fill=ROUTE_COLOR, width=5, joint="curve")
+    draw.line([(c.x, c.y) for c in moves], fill=ROUTE_COLOR, width=5, joint="curve")
 
     return image
 
