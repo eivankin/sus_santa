@@ -1,5 +1,5 @@
 # import visualizer
-from phase3.data import (
+from data import (
     Solution,
     BagDescription,
     Map,
@@ -9,7 +9,8 @@ from phase3.data import (
     Circle,
     EmulatorReport,
     EmulatorReportSegment,
-    SnowArea, Child,
+    SnowArea,
+    Child,
 )
 from constants import BAG_MAX_WEIGHT, BAG_MAX_VOLUME, BASE_SPEED, SNOW_SPEED, IDS_FILE
 from util import (
@@ -21,7 +22,7 @@ from util import (
     edit_json_file,
     cleanup_jumps_to_start,
     segment_dist,
-    segment_time
+    segment_time,
 )
 
 
@@ -87,8 +88,13 @@ def emulate(solution: Solution, map_data: Map) -> RoundInfoData:
         "./data/report.json",
     )
 
-    return RoundInfoData(error_message="", status="Checker verdict", total_time=round(total_time),
-                         total_length=round(total_dist), total_happy=0)
+    return RoundInfoData(
+        error_message="",
+        status="Checker verdict",
+        total_time=round(total_time),
+        total_length=round(total_dist),
+        total_happy=0,
+    )
 
 
 if __name__ == "__main__":

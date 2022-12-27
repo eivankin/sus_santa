@@ -3,10 +3,10 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.checker import emulate
-from phase3.data import Solution, Map, Present, Gift, Coordinates, Child
-from phase3.greedy import most_expensive, get_sol_cost
-from phase3.bin_packing import solve_bin_pack
+from checker import emulate
+from data import Solution, Map, Present, Gift, Coordinates, Child
+from greedy import most_expensive, get_sol_cost
+from bin_packing import solve_bin_pack
 from util import (
     get_map,
     save_map,

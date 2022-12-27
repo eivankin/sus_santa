@@ -6,7 +6,7 @@ import pickle
 
 from ortools.linear_solver import pywraplp
 
-from phase3.data import Map, Gift
+from data import Map, Gift
 from util import load_map
 
 
@@ -34,8 +34,8 @@ def create_data_model(gifts: list[Gift]) -> dict:
 
 
 def solve_bin_pack(gifts: list[Gift], time_limit=3000) -> list[dict] | None:
-    if os.path.exists('./data/bin_packing_result.json'):
-        with open('./data/bin_packing_result.json', 'r') as inp:
+    if os.path.exists("./data/bin_packing_result.json"):
+        with open("./data/bin_packing_result.json", "r") as inp:
             return json.load(inp)
     data = create_data_model(gifts)
 

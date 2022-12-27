@@ -7,7 +7,7 @@ from util import segment_time
 
 from util import load_map
 
-# from visualizer import visualize_route
+from visualizer import visualize_route
 
 
 @dataclass
@@ -160,8 +160,7 @@ def main():
 
     print()
     if input("draw? (y/n): ") == "y":
-        pass
-        # visualize_route(sus_map, Route(best.path, None, None)).save("data/path.png")
+        visualize_route(sus_map, Route(best.path, None, None)).save("data/path.png")
 
 
 if __name__ == "__main__":
