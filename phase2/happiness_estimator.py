@@ -176,7 +176,7 @@ if __name__ == "__main__":
         sol_data,
         population_size=100,
         maximise_fitness=False,
-        generations=500,
+        generations=100,
     )
     ga.run()
 

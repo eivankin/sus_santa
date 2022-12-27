@@ -2,7 +2,7 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase2.data import Order, Present
+from phase2.data import Order, Present, Map
 from util import (
     get_map,
     save_map,
@@ -14,34 +14,48 @@ from util import (
     save,
     load,
 )
-from greedy import most_expensive, pass_weights, get_best_fit_with_weights, calc_values_for_knapsack
+from greedy import (
+    most_expensive,
+    pass_weights,
+    get_best_fit_with_weights,
+    calc_values_for_knapsack,
+    get_sol_cost,
+)
 from happiness_estimator import eval_solution, Weights, WEIGHTS_PATH, load_all_solutions
 from checker import validate
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     if not os.path.exists(MAP_FILE_PATH):
-        sus_map = get_map()
+        sus_map: Map = get_map()
         save_map(sus_map)
     else:
-        sus_map = load_map()
+        sus_map: Map = load_map()
 
     info_about_map(sus_map)
 
-    # presents = [Present(i, i) for i in range(1, 1001)]
     weights = load(Weights, WEIGHTS_PATH)
     solutions = load_all_solutions()
-    scores = [x[1] for x in solutions.values()]
-    print(f"Best score so far: {max(scores)}")
-
-    presents = most_expensive(
-        sus_map, pass_weights(weights, get_best_fit_with_weights),
-        use_knapsack=True, knapsack_value_function=pass_weights(weights, calc_values_for_knapsack)
+    best = max(solutions.values(), key=lambda x: x[1])
+    print(
+        f"Best score so far: actual={best[1]}, "
+        f"calculated={eval_solution(best[0], sus_map, weights)}"
     )
-    # presents[0].gift_id = 2000
+
+    id_to_gift = {g.id: g for g in sus_map.gifts}
+    gifts = [id_to_gift[gid] for gid in sorted(id_to_gift)]
+    presents = most_expensive(
+        gifts,
+        sus_map.children.copy(),
+        fit_function=pass_weights(weights, get_best_fit_with_weights),
+        use_knapsack=True,
+        knapsack_value_function=pass_weights(weights, calc_values_for_knapsack),
+        shuffle_children=True,
+    )
     sus_solution = Order(MAP_ID, presents)
     validate(sus_solution, sus_map)
     print(f"Score: {eval_solution(sus_solution, sus_map, weights)}")
+    print("Cost:", get_sol_cost(sus_map, sus_solution))
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from tqdm import tqdm
 
 from constants import MAX_MONEY
@@ -7,10 +9,23 @@ from random import shuffle
 
 from phase2.happiness_estimator import Weights
 
+child_cache = defaultdict(int)
 
-def calc_values_for_knapsack(weights: Weights, gift: Gift, map_data: Map):
-    return max(weights.get_gender(c.gender)[c.age][Category(gift.type)](gift.price)
-               for c in map_data.children)
+
+def calc_values_for_knapsack(
+    weights: Weights, gift: Gift, children: list[Child]
+) -> int:
+    max_val = 0
+    max_c = None
+    for c in children:
+        h = weights.get_gender(c.gender)[c.age][Category(gift.type)](gift.price) // (
+            child_cache[c.id] + 1
+        )
+        if h > max_val:
+            max_val = h
+            max_c = c
+    child_cache[max_c.id] += 1
+    return max_val
 
 
 def pass_weights(weights: Weights, func):
@@ -21,30 +36,38 @@ def pass_weights(weights: Weights, func):
 
 
 def most_expensive(
-        map_data: Map, shuffle_children=False, fit_function=None, use_knapsack=False,
-        knapsack_value_function=None
+    sorted_gifts: list[Gift],
+    children: list[Child],
+    shuffle_children=False,
+    fit_function=None,
+    use_knapsack=False,
+    knapsack_value_function=None,
 ) -> list[Present]:
     presents: list[Present] = []
     if use_knapsack:
-        prices = [g.price for g in map_data.gifts]
+        child_cache.clear()
+        prices = [g.price for g in sorted_gifts]
         gift_ids = solve(
-            [knapsack_value_function(g, map_data) for g in tqdm(map_data.gifts)],
+            [knapsack_value_function(g, children) for g in tqdm(sorted_gifts)],
             [prices],
-            [MAX_MONEY]
+            [MAX_MONEY],
         )
-        remaining_gifts = {
-            map_data.gifts[gid] for gid in gift_ids
-        }
+        remaining_gifts = {sorted_gifts[gid] for gid in gift_ids}
     else:
-        remaining_gifts = set(map_data.gifts)
+        remaining_gifts = set(sorted_gifts)
+
+    assert len(remaining_gifts) >= len(children)
 
     fit_function = fit_function or get_best_fit
     money_so_far = 0
     if shuffle_children:
-        shuffle(map_data.children)
-    for i, child in enumerate(map_data.children):
+        shuffle(children)
+    for i, child in enumerate(children):
         best = fit_function(
-            child, remaining_gifts, money_so_far, 0 if use_knapsack else len(map_data.children) - i
+            child,
+            remaining_gifts,
+            money_so_far,
+            0 if use_knapsack else len(children) - i,
         )
         money_so_far += best.price
         presents.append(Present(child_id=child.id, gift_id=best.id))
@@ -99,26 +122,28 @@ AGES_4_6 = AGES_0_3.union(
 AGES_7_10 = ALL_CATEGORIES
 
 AGE_TO_CATEGORY = [AGES_0_3] * 4 + [AGES_4_6] * 3 + [AGES_7_10] * 4
-AVG_PRICE = 90
+AVG_PRICE = 70
 
 
 def get_best_fit(
-        child: Child, gifts: set[Gift], money_so_far: int, remaining_children: int
+    child: Child, gifts: set[Gift], money_so_far: int, remaining_children: int
 ) -> Gift:
     for categories in (
-            AGE_TO_CATEGORY[child.age].intersection(
-                GENDER_TO_CATEGORY[Gender(child.gender)]
-            ),
-            AGE_TO_CATEGORY[child.age].intersection(GENDER_TO_CATEGORY["ANY"]),
-            ALL_CATEGORIES,
+        AGE_TO_CATEGORY[child.age].intersection(
+            GENDER_TO_CATEGORY[Gender(child.gender)]
+        ),
+        AGE_TO_CATEGORY[child.age].intersection(GENDER_TO_CATEGORY["ANY"]),
+        ALL_CATEGORIES,
     ):
         best_fits = get_by_categories(categories, gifts)
         if not best_fits:
             continue
         return max(
             filter(
-                lambda g: g.price + AVG_PRICE * (remaining_children - 1) + money_so_far
-                          <= MAX_MONEY,
+                lambda g: g.price
+                + AVG_PRICE * max(remaining_children - 1, 0)
+                + money_so_far
+                <= MAX_MONEY,
                 best_fits,
             ),
             key=lambda g: g.price,
@@ -130,19 +155,30 @@ def get_by_categories(categories: set[Category], gifts: set[Gift]) -> list[Gift]
 
 
 def get_best_fit_with_weights(
-        weights: Weights,
-        child: Child,
-        gifts: set[Gift],
-        money_so_far: int,
-        remaining_children: int,
+    weights: Weights,
+    child: Child,
+    gifts: set[Gift],
+    money_so_far: int,
+    remaining_children: int,
 ):
     return max(
         filter(
-            lambda g: g.price + AVG_PRICE * (remaining_children - 1) + money_so_far
-                      <= MAX_MONEY,
+            lambda g: g.price
+            + AVG_PRICE * max(remaining_children - 1, 0)
+            + money_so_far
+            <= MAX_MONEY,
             gifts,
         ),
         key=lambda g: weights.get_gender(child.gender)[child.age][Category(g.type)](
             g.price
         ),
     )
+
+
+def get_sol_cost(m, s):
+    def get_gift(gid: int):
+        for g in m.gifts:
+            if g.id == gid:
+                return g
+
+    return sum(get_gift(p.gift_id).price for p in s.presenting_gifts)
