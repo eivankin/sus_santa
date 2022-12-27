@@ -1,10 +1,41 @@
 from dataclasses import dataclass
 from enum import Enum
-from math import sqrt
+from math import sqrt, pi, cos, sin
 
 from dataclass_wizard import JSONWizard, json_field
 
 from phase3.constants import MAX_COORD
+
+Bag = list[int]
+Matrix = list[list[float]]
+
+
+@dataclass
+class Circle:
+    center: 'Coordinates'
+    radius: int
+
+    @classmethod
+    def from_snow(cls, snow: "SnowArea"):
+        return cls(center=Coordinates(snow.x, snow.y), radius=snow.r)
+
+    def get_outer_points(self) -> list['Coordinates']:
+        num_vertices = 8
+        angle_step = 2 * pi / num_vertices
+        cos_a = cos(angle_step)
+        sin_a = sin(angle_step)
+        hypot = self.radius / cos(angle_step / 2)
+        ds = [Coordinates(hypot, 0)]
+        for _ in range(num_vertices - 1):
+            (x, y) = (ds[-1].x, ds[-1].y)
+            ds.append(Coordinates(x * cos_a - y * sin_a, x * sin_a + y * cos_a))
+
+        result = []
+        for dc in ds:
+            c = self.center + dc
+            if c.in_bounds():
+                result.append(c.round())
+        return result
 
 
 @dataclass
@@ -99,11 +130,17 @@ class Coordinates(JSONWizard):
     def round(self):
         return Coordinates(round(self.x), round(self.y))
 
+@dataclass
+class Present(JSONWizard):
+    gift_id: int = json_field("giftID", all=True)
+    child_id: int = json_field("childID", all=True)
+
 
 @dataclass
 class Solution(JSONWizard):
+    moves: list[Coordinates]
+    stack_of_bags: list[Bag] = json_field("stackOfBags", all=True)
     map_id: str = json_field("mapID", all=True)
-    # TODO
 
 
 @dataclass
@@ -128,3 +165,19 @@ class RoundInfo(JSONWizard):
     success: bool
     error: str
     data: RoundInfoData
+
+
+class Gender(Enum):
+    MALE = "male"
+    FEMALE = "female"
+
+
+class Category(Enum):
+    EDUCATIONAL_GAMES = "educational_games"
+    BATH_TOYS = "bath_toys"
+    MUSIC_GAMES = "music_games"
+    TOY_KITCHEN = "toy_kitchen"
+    BIKE = "bike"
+    PAINTS = "paints"
+    CASKET = "casket"
+    SOCCER_BALL = "soccer_ball"

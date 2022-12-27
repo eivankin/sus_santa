@@ -2,7 +2,7 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.data import Solution, Map
+from phase3.data import Solution, Map, Present
 from util import (
     get_map,
     save_map,
@@ -25,7 +25,16 @@ if __name__ == "__main__":
 
     info_about_map(sus_map)
 
-    sus_solution = Solution(MAP_ID, )
+    selected_gifts = sus_map.gifts[:len(sus_map.children)]
+    presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
+                enumerate(selected_gifts)]
+    moves = []
+    bags = []
+    for p in presents:
+        bags.append([p.gift_id])
+        moves.append(sus_map.children[p.child_id - 1].coords())
+
+    sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags)
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)
