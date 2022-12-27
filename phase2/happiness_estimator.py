@@ -14,6 +14,8 @@ from phase2.util import load, load_map, save
 
 from random import randint, randrange
 
+WEIGHTS_PATH = './data/weights.json'
+
 
 @dataclass
 class Function(JSONWizard):
@@ -23,7 +25,7 @@ class Function(JSONWizard):
     def __call__(self, price: int):
         return price * self.k + self.b
 
-    def mutate(self) -> 'Function':
+    def mutate(self) -> "Function":
         return Function(self.k + randint(-1, 1), self.b + randint(-1, 1))
 
 
@@ -32,9 +34,7 @@ AgeToWeights = dict[int, CategoryToFunction]
 
 
 def ages_to_list(ages: AgeToWeights) -> list[Function]:
-    return [
-        ages[age][cat] for age in range(MIN_AGE, MAX_AGE + 1) for cat in Category
-    ]
+    return [ages[age][cat] for age in range(MIN_AGE, MAX_AGE + 1) for cat in Category]
 
 
 def ages_from_list(funcs: list[Function]) -> AgeToWeights:
@@ -59,8 +59,8 @@ class Weights(JSONWizard):
     @classmethod
     def from_function_list(cls, funcs: list[Function]):
         return cls(
-            male=ages_from_list(funcs[:len(funcs) // 2]),
-            female=ages_from_list(funcs[len(funcs) // 2:])
+            male=ages_from_list(funcs[: len(funcs) // 2]),
+            female=ages_from_list(funcs[len(funcs) // 2:]),
         )
 
     def get_gender(self, gender: str):
@@ -72,7 +72,9 @@ def eval_solution(solution: Order, map_data: Map, weights: Weights) -> int:
     for present in solution.presenting_gifts:
         child = map_data.children[present.child_id - 1]
         gift = map_data.gifts[present.gift_id - 1]
-        happiness += weights.get_gender(child.gender)[child.age][Category(gift.type)](gift.price)
+        happiness += weights.get_gender(child.gender)[child.age][Category(gift.type)](
+            gift.price
+        )
     return happiness
 
 
@@ -80,9 +82,13 @@ SolutionData = dict[str, (Order, int)]
 
 
 def load_all_solutions() -> SolutionData:
-    return {path.split('.')[0]: (load(Order, f'{SOLUTIONS_PATH}{path}'),
-                                 get_score(path.split('.')[0]))
-            for path in os.listdir(SOLUTIONS_PATH)}
+    return {
+        path.split(".")[0]: (
+            load(Order, f"{SOLUTIONS_PATH}{path}"),
+            get_score(path.split(".")[0]),
+        )
+        for path in os.listdir(SOLUTIONS_PATH)
+    }
 
 
 def get_score(round_id: str) -> int:
@@ -92,9 +98,8 @@ def get_score(round_id: str) -> int:
 
 
 def make_initial_weights() -> AgeToWeights:
-    return {age: {
-        cat: Function(1, 0) for cat in Category
-    }
+    return {
+        age: {cat: Function(1, 0) for cat in Category}
         for age in range(MIN_AGE, MAX_AGE + 1)
     }
 
@@ -117,14 +122,17 @@ class FunctionSearcher(pyeasyga.GeneticAlgorithm):
 
     @staticmethod
     def new(data: SolutionData):
-        return Weights(
-            male=make_initial_weights(),
-            female=make_initial_weights()
-        )
+        if not os.path.exists(WEIGHTS_PATH):
+            return Weights(male=make_initial_weights(), female=make_initial_weights())
+        return load(Weights, WEIGHTS_PATH)
 
     def cross(self, parent_1: Weights, parent_2: Weights) -> tuple[Weights, ...]:
-        return tuple(map(Weights.from_function_list,
-                         self.crossover(parent_1.to_list(), parent_2.to_list())))
+        return tuple(
+            map(
+                Weights.from_function_list,
+                self.crossover(parent_1.to_list(), parent_2.to_list()),
+            )
+        )
 
     @staticmethod
     def crossover(parent_1, parent_2):
@@ -159,10 +167,10 @@ class FunctionSearcher(pyeasyga.GeneticAlgorithm):
             if curr_best[0] == 0:
                 break
             if i % 5 == 0:
-                print(f'Generation #{i}, score: {curr_best[0]}')
+                print(f"Generation #{i}, score: {curr_best[0]}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sol_data = load_all_solutions()
     ga = FunctionSearcher(
         sol_data,
@@ -174,4 +182,4 @@ if __name__ == '__main__':
 
     best = ga.best_individual()
     print(best)
-    save(best[1], './data/weights.json')
+    save(best[1], WEIGHTS_PATH)
