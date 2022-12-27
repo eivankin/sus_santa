@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
     # make_matrix(vs)
     #
-    solution: Route = load(Route, "./data/solutions/01GNA6WHX38DG24628XR8ZWXS7.json")
+    solution: Route = load(Route, "./data/solutions/01GNA7R76Q99XBK62SEGG8VA8A.json")
     bags = load_bags()
     solution.moves = cleanup_jumps_to_start(expand_moves(solution.moves))
     save(solution, f"./data/star.json")

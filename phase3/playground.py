@@ -85,7 +85,7 @@ if __name__ == "__main__":
                     min_gid = gid
             if current_pos == Coordinates(0, 0):
                 # go to the first child using segmented path
-                moves.extend(base_paths[current_pos].path[1:-1])
+                moves.extend(base_paths[nearest_child].path[1:-1])
             bag.append(min_gid)
             moves.append(nearest_child)
             current_pos = nearest_child
