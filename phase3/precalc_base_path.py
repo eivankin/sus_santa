@@ -7,7 +7,7 @@ from util import edit_json_file, load_map, read_json_file
 from simanneal import Annealer
 from constants import PRECALC_BASE_FILE
 
-# from visualizer import visualize_route
+from visualizer import visualize_route
 from tqdm import tqdm
 from optimal_path import WidePathMutator, ObjectiveChecker, SnowDistEstimator
 
@@ -229,10 +229,9 @@ def main():
                 )
                 print("path:", path.path[1:-1])
                 if input("draw? (y/n): ") == "y":
-                    pass
-                    # visualize_route(sus_map, Route(path.path, None, None)).save(
-                    #    "data/path.png"
-                    # )
+                    visualize_route(sus_map, Route(path.path, None, None)).save(
+                       "data/path.png"
+                    )
     else:
         print("linear: ", objective([base, args.point]))
         with read_json_file(PRECALC_BASE_FILE) as res:
@@ -249,8 +248,9 @@ def main():
 
         print()
         if input("draw? (y/n): ") == "y":
-            pass
-            # visualize_route(sus_map, Route(best_path.path, None, None)).save("data/path.png")
+            visualize_route(sus_map, Route(best_path.path, None, None)).save(
+                "data/path.png"
+            )
 
 
 if __name__ == "__main__":

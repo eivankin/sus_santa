@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 from shapely import LineString, Point
 
-from phase3.data import Coordinates, Map, Route, Circle, Line
-from phase3.util import load_map, info_about_map
+from data import Coordinates, Map, Route, Circle, Line
+from util import load_map, info_about_map
 
 IMAGE_SIZE = 10000, 10000
 HOUSE_SIZE = 15
@@ -58,7 +58,9 @@ def visualize_route(m: Map, r: Route) -> Image:
     return image
 
 
-def get_path_between_2_points(m: Map, start: Coordinates, end: Coordinates) -> list[Coordinates]:
+def get_path_between_2_points(
+    m: Map, start: Coordinates, end: Coordinates
+) -> list[Coordinates]:
     circles = [Circle.from_snow(area) for area in m.snow_areas if area.r > 0]
     line = Line.from_two_points(start, end)
     for circle in circles:
