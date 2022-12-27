@@ -38,6 +38,31 @@ class ObjectiveChecker:
         return res
 
 
+# NOTE: after application of such a objective checker, the generated path may contain repeated points!
+# because this function does not throw on same points, but just puts an big cost for them,
+# so if the annealer didn't do a lot of steps, it can stop with a solution with repeated points
+@dataclass
+class CondescendingObjectiveChecker:
+    snow_dist_estimator: callable
+
+    def objective(self, path: list[Coordinates]):
+        # context unaware
+        res = 0
+        prev = path[0]
+        for pos in path[1:]:
+            dist = prev.dist(pos)
+            if dist == 0:
+                return 1e100
+            else:
+                res += segment_time(
+                    prev.dist(pos),
+                    self.snow_dist_estimator(pos, prev),
+                    direction=pos - prev,
+                )
+            prev = pos
+        return res
+
+
 # TODO: mutators that use coordinate system rotation (they converge very fast)
 
 
@@ -148,14 +173,16 @@ def main():
     sus_map = load_map()
     circles = [Circle.from_snow(s) for s in sus_map.snow_areas]
     snow_dist_calculator = SnowDistEstimator(circles).snow_dist
-    objective = ObjectiveChecker(snow_dist_calculator).objective
+    objective = CondescendingObjectiveChecker(snow_dist_calculator).objective
 
     print("linear: ", objective([a, b]))
+    # NOTE: yet we use CondescendingObjectiveChecker, but the number of steps is big,
+    # so the chance of getting a path with repeated points is low
     best = OptimalPathFinder(
         sengemtation,
         WidePathMutator(1, 3000, 3000).mutate,
         objective,
-        schedule={"tmax": 100, "tmin": 1, "steps": 5000, "updates": 500},
+        schedule={"tmax": 100, "tmin": 1, "steps": 10000, "updates": 500},
     ).optimal_path(a, b)
 
     print()
