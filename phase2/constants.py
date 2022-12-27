@@ -19,3 +19,5 @@ SOLUTIONS_PATH = "./data/solutions/"
 
 # Game constants
 MAX_MONEY = 100000
+MIN_AGE = 0
+MAX_AGE = 10
