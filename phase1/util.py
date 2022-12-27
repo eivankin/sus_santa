@@ -7,6 +7,7 @@ from constants import (
     MAP_FILE_PATH,
     SNOW_SPEED,
     BASE_SPEED,
+    WIND_SPEED,
 )
 from data import (
     Route,
@@ -141,7 +142,7 @@ def path_len(moves: list[Coordinates], snow_areas: list[SnowArea]):
 
 
 def segment_dist(
-    from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
+        from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
 ) -> tuple[float, float, list[float]]:
     dist = from_pos.dist(to_pos)
     line = Line.from_two_points(from_pos, to_pos)
@@ -153,5 +154,11 @@ def segment_dist(
     return dist, snow_dist, distances_in_snow
 
 
-def segment_time(dist: float, snow_dist: float) -> float:
-    return snow_dist / SNOW_SPEED + (dist - snow_dist) / BASE_SPEED
+def segment_time(dist: float, snow_dist: float, direction: Coordinates = None) -> float:
+    if direction is not None:
+        # strange wind proportion
+        k = direction.x / (abs(direction.x) + abs(direction.y))
+        speed = BASE_SPEED + WIND_SPEED * k
+    else:
+        speed = BASE_SPEED
+    return snow_dist / SNOW_SPEED + (dist - snow_dist) / speed

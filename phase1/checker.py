@@ -68,7 +68,7 @@ def emulate(solution: Route, map_data: Map) -> RouteData:
         assert dist > 0
         total_dist += dist
         tot_snow += snow_dist
-        total_time += segment_time(dist, snow_dist)
+        total_time += segment_time(dist, snow_dist, next_pos - curr_pos)
         segments.append(
             EmulatorReportSegment(
                 distances_in_snow=distances_in_snow,
