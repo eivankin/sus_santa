@@ -2,7 +2,7 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.data import Solution, Map, Present
+from phase3.data import Solution, Map, Present, Gift
 from util import (
     get_map,
     save_map,
@@ -25,7 +25,8 @@ if __name__ == "__main__":
 
     info_about_map(sus_map)
 
-    selected_gifts = sus_map.gifts[:len(sus_map.children)]
+    selected_gifts = sorted(
+        sus_map.gifts, key=lambda g: (g.price, g.volume, g.weight))[:len(sus_map.children)]
     presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
                 enumerate(selected_gifts)]
     moves = []
