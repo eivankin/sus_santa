@@ -18,3 +18,11 @@ MAP_FILE_PATH = "./data/map.json"
 SOLUTIONS_PATH = "./data/solutions/"
 
 # Game constants
+MAX_MONEY = 50000
+MIN_AGE = 0
+MAX_AGE = 10
+BAG_MAX_WEIGHT = 200
+BAG_MAX_VOLUME = 100
+BASE_SPEED = 70
+SNOW_SPEED = 10
+MAX_COORD = 10_000

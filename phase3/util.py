@@ -109,8 +109,17 @@ def info_about_map(m: Map) -> None:
     types = {g.type for g in m.gifts}
     print(f"Types: {types}")
 
-    children_ids = {c.id for c in m.children}
-    assert children_ids == set(range(1, len(m.children) + 1))
+    # children_ids = {c.id for c in m.children}
+    # assert children_ids == set(range(1, len(m.children) + 1))
     gift_ids = {g.id for g in m.gifts}
     assert gift_ids == set(range(1, len(m.gifts) + 1))
     print(f"Ids for gifts and childrens are {range(1, len(m.children) + 1)}")
+    min_x, min_y, max_x, max_y = 1e10, 1e10, 0, 0
+    for child in m.children:
+        min_x = min(min_x, child.x)
+        min_y = min(min_y, child.y)
+        max_x = max(max_x, child.x)
+        max_y = max(max_y, child.y)
+    print("Children coords info")
+    print(f"{min_x=}, {min_y=}, {max_x=}, {max_y=}")
+    print(f"Number of snow areas: {len(m.snow_areas)}")
