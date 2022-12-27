@@ -139,7 +139,7 @@ def info_about_map(m: Map) -> None:
 def cleanup_jumps_to_start(old_moves: list[Coordinates]):
     moves = [Coordinates(0, 0)]
     for c in old_moves:
-        if c != moves[-1]:
+        if c != moves[-1] and c.in_bounds():
             moves.append(c)
 
     moves.pop(0)
