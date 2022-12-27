@@ -28,8 +28,8 @@ def most_expensive(
     if use_knapsack:
         prices = [g.price for g in map_data.gifts]
         gift_ids = solve(
-            prices,
-            [[knapsack_value_function(g, map_data) for g in tqdm(map_data.gifts)]],
+            [knapsack_value_function(g, map_data) for g in tqdm(map_data.gifts)],
+            [prices],
             [MAX_MONEY]
         )
         remaining_gifts = {

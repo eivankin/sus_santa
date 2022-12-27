@@ -9,6 +9,7 @@ def solve(
         pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
         "KnapsackExample",
     )
+    solver.set_time_limit(1)
 
     solver.Init(values, weights, capacities)
     computed_value = solver.Solve()
