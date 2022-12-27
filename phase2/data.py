@@ -11,7 +11,7 @@ class Gift(JSONWizard):
     price: int
 
     def compact(self):
-        return f"Gift(id:{self.id:4}, {self.type:15}, price:{self.price})"
+        return f"Gift(id:{self.id:4}, {self.type:21}, price:{self.price:3})"
 
     def as_tuple(self) -> tuple[int, str, int]:
         return self.id, self.type, self.price

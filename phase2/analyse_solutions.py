@@ -15,18 +15,15 @@ def get_status_from_cache(round_id: str) -> Optional[RoundInfo]:
         return RoundInfo.from_dict(status_cache[round_id])
 
 
-dirs = os.listdir(SOLUTIONS_PATH)
-for i, filename2 in enumerate(dirs[1:]):
-    filename1 = dirs[i]
-
-    print()
-    print()
+def compare(round_id_1: str, round_id_2: str) -> None:
     print(f"Comparing {filename1} and {filename2}...")
-    info1 = get_status_from_cache(filename1.split(".")[0])
-    info2 = get_status_from_cache(filename2.split(".")[0])
+
+    info1 = get_status_from_cache(round_id_1)
+    info2 = get_status_from_cache(round_id_2)
+
     if info1 is None or info2 is None:
         print("One of the solutions is not in the cache, skipping")
-        continue
+        return
 
     order_1: Order = load(Order, SOLUTIONS_PATH + filename1)
     order_2: Order = load(Order, SOLUTIONS_PATH + filename2)
@@ -45,3 +42,16 @@ for i, filename2 in enumerate(dirs[1:]):
             child_text = child_map[p1.child_id].compact()
             print(f"WAS: {child_text} -> {gift_map[p1.gift_id].compact()}")
             print(f"NOW: {' ' * len(child_text)} -> {gift_map[p2.gift_id].compact()}")
+
+
+dirs = os.listdir(SOLUTIONS_PATH)
+for i, filename2 in enumerate(dirs[1:]):
+    filename1 = dirs[i]
+
+    print()
+    print()
+    compare(filename1.split(".")[0], filename2.split(".")[0])
+
+
+# if __name__ == '__main__':
+#     compare("01GN87YSNEP45R3Z69PTT66YCP", "01GN88N2GV1QVSVC6KGY26TBTV")
