@@ -77,6 +77,7 @@ if __name__ == "__main__":
                     min_gid = gid
             bag.append(min_gid)
             moves.append(nearest_child)
+            current_pos = nearest_child
             child_coords.remove((min_gid, nearest_child))
         actual_bags.append(bag[::-1])
 
