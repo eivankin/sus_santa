@@ -10,7 +10,8 @@ from constants import (
     MAP_FILE_PATH,
     INFO_URL_TEMPLATE,
 )
-from phase3.data import Solution, SolutionResponse, Map, RoundInfo
+from phase3.constants import BASE_SPEED, WIND_SPEED, SNOW_SPEED
+from phase3.data import Solution, SolutionResponse, Map, RoundInfo, Coordinates, SnowArea, Line, Circle, Bag
 
 
 class edit_json_file:
@@ -123,3 +124,49 @@ def info_about_map(m: Map) -> None:
     print("Children coords info")
     print(f"{min_x=}, {min_y=}, {max_x=}, {max_y=}")
     print(f"Number of snow areas: {len(m.snow_areas)}")
+
+
+def cleanup_jumps_to_start(old_moves: list[Coordinates]):
+    moves = [Coordinates(0, 0)]
+    for c in old_moves:
+        if c != moves[-1]:
+            moves.append(c)
+
+    moves.pop(0)
+
+    if moves[-1] == Coordinates(0, 0):
+        moves.pop()
+    if moves[0] == Coordinates(0, 0):
+        moves.pop(0)
+    return moves
+
+
+def load_bags() -> list[Bag]:
+    stack_of_bags = []
+    with open("data/bin_packing_result_best.json", "r") as f:
+        for bag in json.load(f):
+            stack_of_bags.append(bag["gift_ids"])
+    return stack_of_bags
+
+
+def segment_dist(
+        from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
+) -> tuple[float, float, list[float]]:
+    dist = from_pos.dist(to_pos)
+    line = Line.from_two_points(from_pos, to_pos)
+    distances_in_snow = [
+        line.distance_in_circle(Circle.from_snow(snow)) for snow in snow_areas
+    ]
+    snow_dist = sum(distances_in_snow)
+    assert snow_dist <= dist or snow_dist - dist < 1
+    return dist, snow_dist, distances_in_snow
+
+
+def segment_time(dist: float, snow_dist: float, direction: Coordinates = None) -> float:
+    if direction is not None:
+        # strange wind proportion
+        k = direction.x / (abs(direction.x) + abs(direction.y))
+        speed = BASE_SPEED + WIND_SPEED * k
+    else:
+        speed = BASE_SPEED
+    return snow_dist / SNOW_SPEED + (dist - snow_dist) / speed
