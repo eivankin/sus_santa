@@ -51,17 +51,17 @@ if __name__ == "__main__":
     # presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
     #             enumerate(selected_gifts)]
     presents = get_presents()
-    print("Cost:", get_sol_cost(sus_map, presents))
-    packed = solve_bin_pack([sus_map.gifts[p.gift_id] for p in presents])
-    gift_to_children: dict[int, Child] = {
-        p.gift_id: sus_map.children[p.child_id] for p in presents
-    }
-    bags = [p["gift_ids"] for p in packed]
+    print('Cost:', get_sol_cost(sus_map, presents))
+    packed = solve_bin_pack([sus_map.gifts[p.gift_id - 1] for p in presents])
+    gift_to_children: dict[int, Child] = {p.gift_id: sus_map.children[p.child_id]
+                                          for p in presents}
+    bags = [p['gift_ids'] for p in packed]
+    assert sorted(sum(bags, [])) == sorted([p.gift_id for p in presents])
 
     moves: list[Coordinates] = []
     for i, b in enumerate(bags):
         for gid in b:
-            moves.append(gift_to_children[gid - 1].coords())
+            moves.append(gift_to_children[gid].coords())
         if i != len(bags) - 1:
             moves.append(Coordinates(0, 0))
 
