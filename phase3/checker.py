@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
-    sol: Solution = load(Solution, "data/star.json")
+    sol: Solution = load(Solution, "./data/star.json")
     mp = load_map()
     print(emulate(sol, mp))
     print(len(sol.moves))
