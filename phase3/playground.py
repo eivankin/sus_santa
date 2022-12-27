@@ -4,6 +4,7 @@ import warnings
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
 from phase3.data import Solution, Map, Present, Gift, Coordinates
 from phase3.greedy import most_expensive, get_sol_cost
+from phase3.bin_packing import solve_bin_pack
 from util import (
     get_map,
     save_map,
@@ -32,8 +33,11 @@ if __name__ == "__main__":
     #             enumerate(selected_gifts)]
     presents = most_expensive(sus_map.gifts, sus_map.children)
     print('Cost:', get_sol_cost(sus_map, presents))
+    packed = solve_bin_pack([sus_map.gifts[p.gift_id] for p in presents])
+    gift_to_children = {p.gift_id: p.child_id for p in presents}
+    bags = [p['gift_ids'] for p in packed]
+
     moves = []
-    bags = []
     for p in presents:
         bags.append([p.gift_id])
         moves.append(sus_map.children[p.child_id - 1].coords())
