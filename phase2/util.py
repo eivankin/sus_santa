@@ -10,7 +10,7 @@ from constants import (
     MAP_FILE_PATH,
     INFO_URL_TEMPLATE,
 )
-from phase2.data import Order, OrderResponse, Map, RoundInfo
+from data import Order, OrderResponse, Map, RoundInfo
 
 
 class edit_json_file:
