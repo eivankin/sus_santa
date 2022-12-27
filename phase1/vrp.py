@@ -1,4 +1,5 @@
 """Capacited Vehicles Routing Problem (CVRP)."""
+from __future__ import annotations
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -62,7 +63,7 @@ def make_distance_matrix(
                         dist, snow_dist, _ = segment_dist(
                             vertices[i], vertices[j], snow_areas
                         )
-                        time = segment_time(dist, snow_dist)
+                        time = segment_time(dist, snow_dist, vertices[j] - vertices[i])
                         result[i][j] = result[j][i] = time
                         pbar.update()
         with open(TIMES_MATRIX_PATH, "w") as out:
