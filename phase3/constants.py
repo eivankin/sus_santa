@@ -17,6 +17,9 @@ CACHE_FILE = "./data/.status_cache.json"
 MAP_FILE_PATH = "./data/map.json"
 SOLUTIONS_PATH = "./data/solutions/"
 
+TIMES_MATRIX_PATH = "./data/matrix.json"
+PRECALC_BASE_FILE = "./data/precalc_base.json"
+
 # Game constants
 MAX_MONEY = 50000
 MIN_AGE = 0
@@ -25,4 +28,5 @@ BAG_MAX_WEIGHT = 200
 BAG_MAX_VOLUME = 100
 BASE_SPEED = 70
 SNOW_SPEED = 10
+WIND_SPEED = 10
 MAX_COORD = 10_000
