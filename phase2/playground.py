@@ -11,7 +11,8 @@ from util import (
     send_solution,
     get_solution_info,
     edit_json_file,
-    save, load,
+    save,
+    load,
 )
 from greedy import most_expensive, get_fit_function
 from happiness_estimator import eval_solution, Weights, WEIGHTS_PATH, load_all_solutions
@@ -31,13 +32,13 @@ if __name__ == "__main__":
     weights = load(Weights, WEIGHTS_PATH)
     solutions = load_all_solutions()
     scores = [x[1] for x in solutions.values()]
-    print(f'Best score so far: {max(scores)}')
+    print(f"Best score so far: {max(scores)}")
 
     presents = most_expensive(sus_map, get_fit_function(weights))
     # presents[0].gift_id = 2000
     sus_solution = Order(MAP_ID, presents)
     validate(sus_solution, sus_map)
-    print(f'Score: {eval_solution(sus_solution, sus_map, weights)}')
+    print(f"Score: {eval_solution(sus_solution, sus_map, weights)}")
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)

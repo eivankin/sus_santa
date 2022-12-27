@@ -14,7 +14,7 @@ from phase2.util import load, load_map, save
 
 from random import randint, randrange
 
-WEIGHTS_PATH = './data/weights.json'
+WEIGHTS_PATH = "./data/weights.json"
 
 
 @dataclass
@@ -60,7 +60,7 @@ class Weights(JSONWizard):
     def from_function_list(cls, funcs: list[Function]):
         return cls(
             male=ages_from_list(funcs[: len(funcs) // 2]),
-            female=ages_from_list(funcs[len(funcs) // 2:]),
+            female=ages_from_list(funcs[len(funcs) // 2 :]),
         )
 
     def get_gender(self, gender: str):
