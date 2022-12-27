@@ -2,7 +2,6 @@ import json
 import os
 from collections import defaultdict
 
-from pyeasyga import pyeasyga
 from dataclass_wizard import JSONWizard
 from dataclasses import dataclass
 
@@ -105,70 +104,70 @@ def make_initial_weights() -> AgeToWeights:
     }
 
 
-class FunctionSearcher(pyeasyga.GeneticAlgorithm):
-    map_data = load_map()
+# class FunctionSearcher(pyeasyga.GeneticAlgorithm):
+#     map_data = load_map()
 
-    def __init__(self, *args, from_scratch=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fitness_function = self.fitness
-        self.create_individual = self.new
-        self.crossover_function = self.cross
-        self.mutate_function = self.mut
-        self.from_scratch = from_scratch
+#     def __init__(self, *args, from_scratch=False, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fitness_function = self.fitness
+#         self.create_individual = self.new
+#         self.crossover_function = self.cross
+#         self.mutate_function = self.mut
+#         self.from_scratch = from_scratch
 
-    def fitness(self, individual: Weights, data: SolutionData):
-        tot_err = 0
-        for sol, score in data.values():
-            tot_err += abs(eval_solution(sol, self.map_data, individual) - score)
-        return tot_err
+#     def fitness(self, individual: Weights, data: SolutionData):
+#         tot_err = 0
+#         for sol, score in data.values():
+#             tot_err += abs(eval_solution(sol, self.map_data, individual) - score)
+#         return tot_err
 
-    def new(self, data: SolutionData):
-        if self.from_scratch or not os.path.exists(WEIGHTS_PATH):
-            return Weights(male=make_initial_weights(), female=make_initial_weights())
-        return load(Weights, WEIGHTS_PATH)
+#     def new(self, data: SolutionData):
+#         if self.from_scratch or not os.path.exists(WEIGHTS_PATH):
+#             return Weights(male=make_initial_weights(), female=make_initial_weights())
+#         return load(Weights, WEIGHTS_PATH)
 
-    def cross(self, parent_1: Weights, parent_2: Weights) -> tuple[Weights, ...]:
-        return tuple(
-            map(
-                Weights.from_function_list,
-                self.crossover(parent_1.to_list(), parent_2.to_list()),
-            )
-        )
+#     def cross(self, parent_1: Weights, parent_2: Weights) -> tuple[Weights, ...]:
+#         return tuple(
+#             map(
+#                 Weights.from_function_list,
+#                 self.crossover(parent_1.to_list(), parent_2.to_list()),
+#             )
+#         )
 
-    @staticmethod
-    def crossover(parent_1, parent_2):
-        """Crossover (mate) two parents to produce two children.
+#     @staticmethod
+#     def crossover(parent_1, parent_2):
+#         """Crossover (mate) two parents to produce two children.
 
-        :param parent_1: candidate solution representation (list)
-        :param parent_2: candidate solution representation (list)
-        :returns: tuple containing two children
+#         :param parent_1: candidate solution representation (list)
+#         :param parent_2: candidate solution representation (list)
+#         :returns: tuple containing two children
 
-        """
-        index = randrange(1, len(parent_1))
-        child_1 = parent_1[:index] + parent_2[index:]
-        child_2 = parent_2[:index] + parent_1[index:]
-        return child_1, child_2
+#         """
+#         index = randrange(1, len(parent_1))
+#         child_1 = parent_1[:index] + parent_2[index:]
+#         child_2 = parent_2[:index] + parent_1[index:]
+#         return child_1, child_2
 
-    @staticmethod
-    def mut(individual: Weights) -> None:
-        f_list = individual.to_list()
-        mutate_index = randrange(len(f_list))
-        f_list[mutate_index] = f_list[mutate_index].mutate()
-        new_individual = Weights.from_function_list(f_list)
-        individual.male = new_individual.male
-        individual.female = new_individual.female
+#     @staticmethod
+#     def mut(individual: Weights) -> None:
+#         f_list = individual.to_list()
+#         mutate_index = randrange(len(f_list))
+#         f_list[mutate_index] = f_list[mutate_index].mutate()
+#         new_individual = Weights.from_function_list(f_list)
+#         individual.male = new_individual.male
+#         individual.female = new_individual.female
 
-    def run(self):
-        """Run (solve) the Genetic Algorithm."""
-        self.create_first_generation()
+#     def run(self):
+#         """Run (solve) the Genetic Algorithm."""
+#         self.create_first_generation()
 
-        for i in range(1, self.generations):
-            self.create_next_generation()
-            curr_best = self.best_individual()
-            if curr_best[0] == 0:
-                break
-            if i % 5 == 0:
-                print(f"Generation #{i}, score: {curr_best[0]}")
+#         for i in range(1, self.generations):
+#             self.create_next_generation()
+#             curr_best = self.best_individual()
+#             if curr_best[0] == 0:
+#                 break
+#             if i % 5 == 0:
+#                 print(f"Generation #{i}, score: {curr_best[0]}")
 
 
 if __name__ == "__main__":
