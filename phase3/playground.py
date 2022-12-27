@@ -17,7 +17,7 @@ from util import (
     get_solution_info,
     edit_json_file,
     save,
-    load,
+    load, path_len,
 )
 
 from dataclasses import dataclass
@@ -60,13 +60,30 @@ if __name__ == "__main__":
     assert sorted(sum(bags, [])) == sorted([p.gift_id for p in presents])
 
     moves: list[Coordinates] = []
+    current_pos = Coordinates(0, 0)
+    actual_bags = []
     for i, b in enumerate(bags):
-        for gid in b:
-            moves.append(gift_to_children[gid].coords())
+        bag = []
+        child_coords = {(gid, gift_to_children[gid].coords()) for gid in b}
+        for _ in range(len(b)):
+            nearest_child = None
+            min_time = 0
+            min_gid = 0
+            for gid, c in child_coords:
+                time = path_len([current_pos, c], snow_areas=sus_map.snow_areas)
+                if nearest_child is None or time < min_time:
+                    nearest_child = c
+                    min_time = time
+                    min_gid = gid
+            bag.append(min_gid)
+            moves.append(nearest_child)
+            child_coords.remove((min_gid, nearest_child))
+        actual_bags.append(bag[::-1])
+
         if i != len(bags) - 1:
             moves.append(Coordinates(0, 0))
 
-    sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags[::-1])
+    sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=actual_bags[::-1])
     print(emulate(sus_solution, sus_map))
 
     image_path = "./data/route.png"

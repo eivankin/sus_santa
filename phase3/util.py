@@ -153,14 +153,14 @@ def cleanup_jumps_to_start(old_moves: list[Coordinates]):
 
 def load_bags() -> list[Bag]:
     stack_of_bags = []
-    with open("data/bin_packing_result_best.json", "r") as f:
+    with open("bin_packing_result.json", "r") as f:
         for bag in json.load(f):
             stack_of_bags.append(bag["gift_ids"])
     return stack_of_bags
 
 
 def segment_dist(
-    from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
+        from_pos: Coordinates, to_pos: Coordinates, snow_areas: list[SnowArea]
 ) -> tuple[float, float, list[float]]:
     dist = from_pos.dist(to_pos)
     line = Line.from_two_points(from_pos, to_pos)
@@ -180,3 +180,12 @@ def segment_time(dist: float, snow_dist: float, direction: Coordinates = None) -
     else:
         speed = BASE_SPEED
     return snow_dist / SNOW_SPEED + (dist - snow_dist) / speed
+
+
+def st(n1: Coordinates, n2: Coordinates, snow_areas: list[SnowArea]):
+    d, s, _ = segment_dist(n1, n2, snow_areas)
+    return segment_time(d, s)
+
+
+def path_len(moves: list[Coordinates], snow_areas: list[SnowArea]):
+    return sum(st(a, b, snow_areas) for a, b in zip(moves[:-1], moves[1:]))
