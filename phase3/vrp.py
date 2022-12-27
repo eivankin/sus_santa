@@ -21,6 +21,7 @@ def update_matrix(matrix: Matrix, vertices: list[Coordinates]) -> Matrix:
     with open(PRECALC_BASE_FILE, "r") as inp:
         pb = json.load(inp)
         for j in range(1, len(matrix)):
+            # TODO: from i to j is not the same as from j to i due to wind. Fix it.
             result[i][j] = result[j][i] = (
                 Path.from_dict(pb[vertices[j].to_str()]).length / BASE_SPEED
             )
@@ -146,7 +147,7 @@ def solve(
 ):
     """Solve the CVRP problem."""
     # Instantiate the data problem.
-    vertices: list[Coordinates] = [Coordinates(0, 0)] + map_data.children
+    vertices: list[Coordinates] = [Coordinates(0, 0)] + [c.coords() for c in map_data.children]
     data = create_data_model(
         vertices, map_data.snow_areas, stack_of_bags, distance_matrix
     )
