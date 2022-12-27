@@ -107,12 +107,13 @@ def make_initial_weights() -> AgeToWeights:
 class FunctionSearcher(pyeasyga.GeneticAlgorithm):
     map_data = load_map()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, from_scratch=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fitness_function = self.fitness
         self.create_individual = self.new
         self.crossover_function = self.cross
         self.mutate_function = self.mut
+        self.from_scratch = from_scratch
 
     def fitness(self, individual: Weights, data: SolutionData):
         tot_err = 0
@@ -120,9 +121,8 @@ class FunctionSearcher(pyeasyga.GeneticAlgorithm):
             tot_err += abs(eval_solution(sol, self.map_data, individual) - score)
         return tot_err
 
-    @staticmethod
-    def new(data: SolutionData):
-        if not os.path.exists(WEIGHTS_PATH):
+    def new(self, data: SolutionData):
+        if self.from_scratch or not os.path.exists(WEIGHTS_PATH):
             return Weights(male=make_initial_weights(), female=make_initial_weights())
         return load(Weights, WEIGHTS_PATH)
 

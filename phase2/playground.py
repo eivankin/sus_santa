@@ -14,7 +14,7 @@ from util import (
     save,
     load,
 )
-from greedy import most_expensive, get_fit_function
+from greedy import most_expensive, pass_weights, get_best_fit_with_weights, calc_values_for_knapsack
 from happiness_estimator import eval_solution, Weights, WEIGHTS_PATH, load_all_solutions
 from checker import validate
 
@@ -34,7 +34,10 @@ if __name__ == "__main__":
     scores = [x[1] for x in solutions.values()]
     print(f"Best score so far: {max(scores)}")
 
-    presents = most_expensive(sus_map, get_fit_function(weights))
+    presents = most_expensive(
+        sus_map, pass_weights(weights, get_best_fit_with_weights),
+        use_knapsack=True, knapsack_value_function=pass_weights(weights, calc_values_for_knapsack)
+    )
     # presents[0].gift_id = 2000
     sus_solution = Order(MAP_ID, presents)
     validate(sus_solution, sus_map)
