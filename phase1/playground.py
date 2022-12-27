@@ -76,37 +76,37 @@ if __name__ == "__main__":
     # base = Coordinates(0, 0)
     # curr_pos = Coordinates(0, 0)
 
-    # unvisited = set(child_pos for child_pos in sus_map.children)
-    # for bag in tqdm(
-    #     list(reversed(stack_of_bags))
-    # ):  # since it's a stack, the order is reversed
-    #     for i, _ in enumerate(bag):
-    #         # while we have gifts in a bag
-    #         # the strategy is to give these gifts to the nearest children
-    #         nearest_child_pos = None
-    #         metric = 10**100
-    #         for child_pos in unvisited:
-    #             m = child_pos.dist(curr_pos)
-    #             if m >= metric:
-    #                 continue
-    #             # m = out_circ + 7*in_circ = (m - in_circ) + 7 * in_circ
-    #             m += 6 * penalty(child_pos, curr_pos)
-    #             if nearest_child_pos is None or m < metric:
-    #                 nearest_child_pos = child_pos
-    #                 metric = m
-    #         if i == 0:
-    #             assert curr_pos == base
-    #             # go to the first child using segmented path
-    #             moves.extend(optimal_path_from_base_to(nearest_child_pos))
-    #         moves.append(nearest_child_pos)
-    #         curr_pos = nearest_child_pos
-    #         unvisited.remove(nearest_child_pos)
+    unvisited = set(child_pos for child_pos in sus_map.children)
+    for bag in tqdm(
+        list(reversed(stack_of_bags))
+    ):  # since it's a stack, the order is reversed
+        for i, _ in enumerate(bag):
+            # while we have gifts in a bag
+            # the strategy is to give these gifts to the nearest children
+            nearest_child_pos = None
+            metric = 10**100
+            for child_pos in unvisited:
+                m = child_pos.dist(curr_pos)
+                if m >= metric:
+                    continue
+                # m = out_circ + 7*in_circ = (m - in_circ) + 7 * in_circ
+                m += 6 * penalty(child_pos, curr_pos)
+                if nearest_child_pos is None or m < metric:
+                    nearest_child_pos = child_pos
+                    metric = m
+            if i == 0:
+                assert curr_pos == base
+                # go to the first child using segmented path
+                moves.extend(optimal_path_from_base_to(nearest_child_pos))
+            moves.append(nearest_child_pos)
+            curr_pos = nearest_child_pos
+            unvisited.remove(nearest_child_pos)
 
-    #     # go back using segmented path
-    #     if len(unvisited) != 0:
-    #         moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
-    #         moves.append(base)
-    #         curr_pos = base
+        # go back using segmented path
+        if len(unvisited) != 0:
+            moves.extend(reversed(optimal_path_from_base_to(curr_pos)))
+            moves.append(base)
+            curr_pos = base
 
     moves = solve(sus_map, stack_of_bags, tl=int(input("Time limit: ")))
     if moves:
