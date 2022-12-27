@@ -2,9 +2,9 @@ import json
 import os
 import warnings
 
-from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
+from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH, PRECALC_BASE_FILE
 from checker import emulate
-from data import Solution, Map, Present, Gift, Coordinates, Child
+from data import Solution, Map, Present, Gift, Coordinates, Child, Path
 from greedy import most_expensive, get_sol_cost
 from bin_packing import solve_bin_pack
 from visualizer import visualize_moves
@@ -17,7 +17,9 @@ from util import (
     get_solution_info,
     edit_json_file,
     save,
-    load, path_len,
+    load,
+    path_len,
+    read_json_file,
 )
 
 from dataclasses import dataclass
@@ -52,12 +54,18 @@ if __name__ == "__main__":
     # presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
     #             enumerate(selected_gifts)]
     presents = get_presents()
-    print('Cost:', get_sol_cost(sus_map, presents))
+    print("Cost:", get_sol_cost(sus_map, presents))
     packed = solve_bin_pack([sus_map.gifts[p.gift_id - 1] for p in presents])
-    gift_to_children: dict[int, Child] = {p.gift_id: sus_map.children[p.child_id]
-                                          for p in presents}
-    bags = [p['gift_ids'] for p in packed]
+    gift_to_children: dict[int, Child] = {
+        p.gift_id: sus_map.children[p.child_id] for p in presents
+    }
+    bags = [p["gift_ids"] for p in packed]
     assert sorted(sum(bags, [])) == sorted([p.gift_id for p in presents])
+
+    base_paths = {}
+    with read_json_file(PRECALC_BASE_FILE) as precalc:
+        for k, v in precalc.items():
+            base_paths[Coordinates.from_str(k)] = Path.from_dict(v)
 
     moves: list[Coordinates] = []
     current_pos = Coordinates(0, 0)
@@ -75,14 +83,20 @@ if __name__ == "__main__":
                     nearest_child = c
                     min_time = time
                     min_gid = gid
+            if current_pos == Coordinates(0, 0):
+                # go to the first child using segmented path
+                moves.extend(base_paths[current_pos].path[1:-1])
             bag.append(min_gid)
             moves.append(nearest_child)
             current_pos = nearest_child
             child_coords.remove((min_gid, nearest_child))
         actual_bags.append(bag[::-1])
-
+        
+        # go back using segmented path
         if i != len(bags) - 1:
+            moves.extend(reversed(base_paths[current_pos].path[1:-1]))
             moves.append(Coordinates(0, 0))
+            curr_pos = Coordinates(0, 0)
 
     sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=actual_bags[::-1])
     print(emulate(sus_solution, sus_map))
