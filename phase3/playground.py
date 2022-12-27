@@ -1,3 +1,4 @@
+import json
 import os
 import warnings
 
@@ -17,6 +18,23 @@ from util import (
     load,
 )
 
+from dataclasses import dataclass
+from dataclass_wizard import JSONWizard
+
+
+@dataclass
+class Presents(JSONWizard):
+    presents: list[Present]
+
+
+def get_presents(force=False) -> list[Present]:
+    if force or not os.path.exists('p.json'):
+        ps = most_expensive(sus_map.gifts, sus_map.children)
+        save(Presents(ps), 'p.json')
+    else:
+        return load(Presents, 'p.json').presents
+
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     if not os.path.exists(MAP_FILE_PATH):
@@ -31,7 +49,7 @@ if __name__ == "__main__":
     #     sus_map.gifts, key=lambda g: (g.price, g.volume, g.weight))[:len(sus_map.children)]
     # presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
     #             enumerate(selected_gifts)]
-    presents = most_expensive(sus_map.gifts, sus_map.children)
+    presents = get_presents()
     print('Cost:', get_sol_cost(sus_map, presents))
     packed = solve_bin_pack([sus_map.gifts[p.gift_id] for p in presents])
     gift_to_children = {p.gift_id: p.child_id for p in presents}
