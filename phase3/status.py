@@ -1,5 +1,5 @@
 from util import get_solution_info
-from phase3.data import RoundInfo
+from data import RoundInfo
 from constants import IDS_FILE, CACHE_FILE
 import json
 

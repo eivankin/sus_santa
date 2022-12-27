@@ -2,8 +2,8 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.data import Solution, Map, Present, Gift, Coordinates
-from phase3.greedy import most_expensive, get_sol_cost
+from data import Solution, Map, Present, Gift, Coordinates
+from greedy import most_expensive, get_sol_cost
 from util import (
     get_map,
     save_map,
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # presents = [Present(gift_id=g.id, child_id=i + 1) for i, g in
     #             enumerate(selected_gifts)]
     presents = most_expensive(sus_map.gifts, sus_map.children)
-    print('Cost:', get_sol_cost(sus_map, presents))
+    print("Cost:", get_sol_cost(sus_map, presents))
     moves = []
     bags = []
     for p in presents:
