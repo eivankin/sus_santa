@@ -1,26 +1,27 @@
+from __future__ import annotations
+
 import json
+import os.path
 import pickle
 
 from ortools.linear_solver import pywraplp
 
-from data import Map
+from phase3.data import Map, Gift
 from util import load_map
 
 
-def create_data_model(m: Map = None) -> dict:
+def create_data_model(gifts: list[Gift]) -> dict:
     """Create the data for the example."""
     data = {}
-    if m is None:
-        m = load_map()
 
     weights, volumes, ids = [], [], []
-    print("Number of gifts:", len(m.gifts))
-    for i, gift in enumerate(m.gifts):
+    print("Number of gifts:", len(gifts))
+    for i, gift in enumerate(gifts):
         weights.append(gift.weight)
         volumes.append(gift.volume)
         ids.append(gift.id)
 
-    assert ids == list(range(1, len(ids) + 1))
+    # assert ids == list(range(1, len(ids) + 1))
 
     data["weights"] = weights
     data["volumes"] = volumes
@@ -32,11 +33,15 @@ def create_data_model(m: Map = None) -> dict:
     return data
 
 
-def main():
-    data = create_data_model()
+def solve_bin_pack(gifts: list[Gift], time_limit=3000) -> list[dict] | None:
+    if os.path.exists('./data/bin_packing_result.json'):
+        with open('./data/bin_packing_result.json', 'r') as inp:
+            return json.load(inp)
+    data = create_data_model(gifts)
 
     # Create the mip solver with the SCIP backend.
     solver = pywraplp.Solver.CreateSolver("SCIP")
+    solver.set_time_limit(time_limit)
 
     if not solver:
         return
@@ -76,7 +81,7 @@ def main():
     # Objective: minimize the number of bins used.
 
     # solver.Minimize(solver.Sum([y[j] for j in data['bins']]))
-    solver.Minimize(sum([x[(i, 45)] for i in data["items"]]))
+    # solver.Minimize(sum([x[(i, 45)] for i in data["items"]]))
 
     # for
 
@@ -97,12 +102,12 @@ def main():
                         bin_volume += data["volumes"][i]
                 if bin_items:
                     num_bins += 1
+                    ids = [data["ids"][i] for i in bin_items]
                     print("Bin number", j)
-                    print("  Items packed:", bin_items)
+                    print("  Items packed:", ids)
                     print("  Total weight:", bin_weight)
                     print("  Total volume:", bin_volume)
                     print()
-                    ids = [data["ids"][i] for i in bin_items]
                     bin_res = {
                         "weight": bin_weight,
                         "volume": bin_volume,
@@ -116,9 +121,10 @@ def main():
         print()
         print("Number of bins used:", num_bins)
         print("Time = ", solver.WallTime(), " milliseconds")
+        return res
     else:
         print("The problem does not have an optimal solution.")
 
 
 if __name__ == "__main__":
-    main()
+    solve_bin_pack()
