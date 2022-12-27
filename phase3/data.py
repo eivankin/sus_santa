@@ -171,9 +171,11 @@ class SolutionResponse(JSONWizard):
 
 @dataclass
 class RoundInfoData(JSONWizard):
+    total_time: int = json_field("total_time")
+    total_length: int = json_field("total_length")
     error_message: str = json_field("error_message")
     status: str = json_field("status")
-    total_happy: int = json_field("total_happy")
+    total_happy: int | None = json_field("total_happy")
 
 
 @dataclass
@@ -290,3 +292,31 @@ class Line:
 
         (x1, y1), (x2, y2) = intersections
         return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
+
+
+@dataclass
+class EmulatorReportSegment(JSONWizard):
+    from_pos: Coordinates
+    to_pos: Coordinates
+    distance: float
+    distances_in_snow: list[float]
+
+
+@dataclass
+class EmulatorReport(JSONWizard):
+    total_distance: float
+    distance_in_snow: float
+    segments: list[EmulatorReportSegment]
+
+
+@dataclass
+class BagDescription:
+    weight: int
+    volume: int
+
+    @classmethod
+    def from_bag(cls, map_data: Map, bag: Bag):
+        gifts = [gift for gift in map_data.gifts if gift.id in bag]
+        return cls(
+            weight=sum(g.weight for g in gifts), volume=sum(g.volume for g in gifts)
+        )

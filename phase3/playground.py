@@ -3,7 +3,8 @@ import os
 import warnings
 
 from constants import MAP_FILE_PATH, MAP_ID, IDS_FILE, SOLUTIONS_PATH
-from phase3.data import Solution, Map, Present, Gift, Coordinates
+from phase3.checker import emulate
+from phase3.data import Solution, Map, Present, Gift, Coordinates, Child
 from phase3.greedy import most_expensive, get_sol_cost
 from phase3.bin_packing import solve_bin_pack
 from util import (
@@ -52,16 +53,20 @@ if __name__ == "__main__":
     presents = get_presents()
     print("Cost:", get_sol_cost(sus_map, presents))
     packed = solve_bin_pack([sus_map.gifts[p.gift_id] for p in presents])
-    gift_to_children = {p.gift_id: p.child_id for p in presents}
+    gift_to_children: dict[int, Child] = {
+        p.gift_id: sus_map.children[p.child_id] for p in presents
+    }
     bags = [p["gift_ids"] for p in packed]
 
-    moves = []
-    for p in presents:
-        bags.append([p.gift_id])
-        moves.append(sus_map.children[p.child_id - 1].coords())
-        moves.append(Coordinates(0, 0))
+    moves: list[Coordinates] = []
+    for i, b in enumerate(bags):
+        for gid in b:
+            moves.append(gift_to_children[gid - 1].coords())
+        if i != len(bags) - 1:
+            moves.append(Coordinates(0, 0))
 
     sus_solution = Solution(map_id=MAP_ID, moves=moves, stack_of_bags=bags[::-1])
+    print(emulate(sus_solution, sus_map))
 
     if input("Send solution? y/n: ").lower() in ("y", "yes"):
         sus_response = send_solution(sus_solution)
