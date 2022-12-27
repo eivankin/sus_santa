@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os.path
 import pickle
@@ -31,9 +33,9 @@ def create_data_model(gifts: list[Gift]) -> dict:
     return data
 
 
-def solve_bin_pack(gifts: list[Gift], time_limit=30) -> list[dict] | None:
-    if os.path.exists('bin_packing_result.json'):
-        with open('bin_packing_result', 'r') as inp:
+def solve_bin_pack(gifts: list[Gift], time_limit=3000) -> list[dict] | None:
+    if os.path.exists('./data/bin_packing_result.json'):
+        with open('./data/bin_packing_result.json', 'r') as inp:
             return json.load(inp)
     data = create_data_model(gifts)
 
@@ -79,7 +81,7 @@ def solve_bin_pack(gifts: list[Gift], time_limit=30) -> list[dict] | None:
     # Objective: minimize the number of bins used.
 
     # solver.Minimize(solver.Sum([y[j] for j in data['bins']]))
-    solver.Minimize(sum([x[(i, 45)] for i in data["items"]]))
+    # solver.Minimize(sum([x[(i, 45)] for i in data["items"]]))
 
     # for
 
@@ -100,12 +102,12 @@ def solve_bin_pack(gifts: list[Gift], time_limit=30) -> list[dict] | None:
                         bin_volume += data["volumes"][i]
                 if bin_items:
                     num_bins += 1
+                    ids = [data["ids"][i] for i in bin_items]
                     print("Bin number", j)
-                    print("  Items packed:", bin_items)
+                    print("  Items packed:", ids)
                     print("  Total weight:", bin_weight)
                     print("  Total volume:", bin_volume)
                     print()
-                    ids = [data["ids"][i] for i in bin_items]
                     bin_res = {
                         "weight": bin_weight,
                         "volume": bin_volume,
