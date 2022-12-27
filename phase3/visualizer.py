@@ -57,6 +57,15 @@ def visualize_moves(m: Map, moves: list[Coordinates]) -> Image:
     return image
 
 
+def visualize_route(m: Map, r: Route) -> Image:
+    image = visualize_map(m)
+    draw = ImageDraw.Draw(image)
+
+    draw.line([(c.x, c.y) for c in r.moves], fill=ROUTE_COLOR, width=5, joint="curve")
+
+    return image
+
+
 def get_path_between_2_points(
     m: Map, start: Coordinates, end: Coordinates
 ) -> list[Coordinates]:
